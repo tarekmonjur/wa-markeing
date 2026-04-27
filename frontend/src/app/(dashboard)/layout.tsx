@@ -25,6 +25,9 @@ import {
   Clock,
   CalendarDays,
   BookOpen,
+  Bell,
+  Shield,
+  Radio,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -42,10 +45,13 @@ const navItems = [
   { href: '/settings/plan', label: 'Plan & Usage', icon: CreditCard },
   { href: '/settings/api-keys', label: 'API Keys', icon: Key },
   { href: '/settings/send-window', label: 'Send Window', icon: Clock },
+  { href: '/settings/notifications', label: 'Notifications', icon: Bell },
   { href: '/analytics', label: 'Analytics', icon: BarChart3 },
   { href: '/ai', label: 'AI Generator', icon: Sparkles },
   { href: '/integrations/webhooks', label: 'Webhooks', icon: Webhook },
   { href: '/settings/team', label: 'Team', icon: UsersRound },
+  { href: '/admin/users', label: 'Users (Admin)', icon: Shield },
+  { href: '/admin/sessions', label: 'Sessions (Admin)', icon: Radio },
 ];
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {

@@ -81,4 +81,46 @@ describe('Plan Limits (e2e)', () => {
       .send({ name: 'Test Key' })
       .expect(403);
   });
+
+  it('FREE user: contact creation beyond limit returns 403 PLAN_LIMIT_EXCEEDED', async () => {
+    // Seed usage at the limit (500 contacts for FREE)
+    const usageRepo = ds.getRepository(PlanUsage);
+    let usage = await usageRepo.findOne({ where: { userId: freeUserId } });
+    if (!usage) {
+      usage = usageRepo.create({ userId: freeUserId, contactCount: 500 });
+    } else {
+      usage.contactCount = 500;
+    }
+    await usageRepo.save(usage);
+
+    const res = await request(app.getHttpServer())
+      .post('/api/v1/contacts')
+      .set({ Authorization: `Bearer ${freeToken}` })
+      .send({ phone: '+8801700000001', name: 'Over Limit' });
+
+    expect(res.status).toBe(403);
+  });
+
+  it('FREE user: 6th campaign creation returns 403 PLAN_LIMIT_EXCEEDED', async () => {
+    // Seed usage at the limit (5 campaigns for FREE)
+    const usageRepo = ds.getRepository(PlanUsage);
+    let usage = await usageRepo.findOne({ where: { userId: freeUserId } });
+    if (!usage) {
+      usage = usageRepo.create({ userId: freeUserId, campaignsThisMonth: 5 });
+    } else {
+      usage.campaignsThisMonth = 5;
+    }
+    await usageRepo.save(usage);
+
+    const res = await request(app.getHttpServer())
+      .post('/api/v1/campaigns')
+      .set({ Authorization: `Bearer ${freeToken}` })
+      .send({
+        name: 'Over Limit Campaign',
+        sessionId: '00000000-0000-0000-0000-000000000000',
+        templateId: '00000000-0000-0000-0000-000000000000',
+      });
+
+    expect(res.status).toBe(403);
+  });
 });

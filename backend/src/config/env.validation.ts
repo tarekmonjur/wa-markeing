@@ -20,4 +20,10 @@ export const envValidationSchema = Joi.object({
   OLLAMA_URL: Joi.string().default('http://ollama:11434'),
   OLLAMA_MODEL: Joi.string().default('llama3.2:3b'),
   SESSION_MANAGER_URL: Joi.string().default('http://session-manager:3002'),
+  SMTP_HOST: Joi.string().optional().allow(''),
+  SMTP_PORT: Joi.number().default(587),
+  SMTP_SECURE: Joi.boolean().default(false),
+  SMTP_USER: Joi.string().optional().allow(''),
+  SMTP_PASS: Joi.string().optional().allow(''),
+  SMTP_FROM: Joi.string().default('noreply@wa-marketing.local'),
 });

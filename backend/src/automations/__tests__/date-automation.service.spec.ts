@@ -142,4 +142,59 @@ describe('DateAutomationService', () => {
     await service.dailyAutomationCheck();
     expect(campaignQueue.add).not.toHaveBeenCalled();
   });
+
+  it('sends on Feb 28 when birthday is Feb 29 in a non-leap year', async () => {
+    // Simulate Feb 28 in a non-leap year
+    const feb28 = new Date(2025, 1, 28); // Feb 28, 2025 (non-leap)
+    jest.useFakeTimers({ now: feb28 });
+
+    const mockContact = {
+      id: 'c-feb29',
+      phone: '+8801712345999',
+      name: 'Leap Birthday',
+      email: '',
+      customFields: { birthday: '2000-02-29' },
+      optedOut: false,
+    };
+
+    // First query (Feb 28 birthdays) returns empty
+    const qb1 = mockQueryBuilder();
+    qb1.getMany.mockResolvedValue([]);
+
+    // Second query (Feb 29 birthdays — checkFeb29 clause) returns the contact
+    const qb2 = mockQueryBuilder();
+    qb2.getMany.mockResolvedValue([mockContact]);
+
+    let callCount = 0;
+    (contactRepo.createQueryBuilder as jest.Mock).mockImplementation(() => {
+      callCount++;
+      return callCount === 1 ? qb1 : qb2;
+    });
+
+    (automationRepo.find as jest.Mock).mockResolvedValue([
+      {
+        id: 'auto-1',
+        userId: 'user-1',
+        sessionId: 'sess-1',
+        templateId: 'tmpl-1',
+        fieldName: 'birthday',
+        sendTime: '09:00',
+        isActive: true,
+        template: { body: 'Happy Birthday {{name}}!', mediaUrl: null, mediaType: null },
+      },
+    ]);
+
+    await service.dailyAutomationCheck();
+
+    expect(campaignQueue.add).toHaveBeenCalledWith(
+      'send-message',
+      expect.objectContaining({
+        phone: '+8801712345999',
+        body: 'Happy Birthday Leap Birthday!',
+      }),
+      expect.anything(),
+    );
+
+    jest.useRealTimers();
+  });
 });

@@ -32,6 +32,7 @@ import { AutomationsModule } from './automations/automations.module';
 import { ApiKeysModule } from './api-keys/api-keys.module';
 import { PublicApiModule } from './public-api/public-api.module';
 import { MetricsModule } from './metrics/metrics.module';
+import { NotificationsModule } from './notifications/notifications.module';
 
 @Module({
   imports: [
@@ -92,6 +93,7 @@ import { MetricsModule } from './metrics/metrics.module';
     ApiKeysModule,
     PublicApiModule,
     MetricsModule,
+    NotificationsModule,
   ],
   providers: [
     {

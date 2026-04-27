@@ -3,18 +3,20 @@ import { defineI18nUI } from 'fumadocs-ui/i18n';
 import type { BaseLayoutProps } from 'fumadocs-ui/layouts/shared';
 
 export const { provider: i18nProvider } = defineI18nUI(i18n, {
-  en: {
-    displayName: 'English',
-  },
-  bn: {
-    displayName: 'বাংলা',
-    search: 'অনুসন্ধান করুন',
-    searchNoResult: 'কোন রেজাল্ট পাওয়া যায়নি',
-    toc: 'এই পৃষ্ঠায়',
-    lastUpdate: 'সর্বশেষ আপডেট',
-    previousPage: 'আগের পৃষ্ঠা',
-    nextPage: 'পরের পৃষ্ঠা',
-    chooseTheme: 'থিম নির্বাচন',
+  translations: {
+    en: {
+      displayName: 'English',
+    },
+    bn: {
+      displayName: 'বাংলা',
+      search: 'অনুসন্ধান করুন',
+      searchNoResult: 'কোন রেজাল্ট পাওয়া যায়নি',
+      toc: 'এই পৃষ্ঠায়',
+      lastUpdate: 'সর্বশেষ আপডেট',
+      previousPage: 'আগের পৃষ্ঠা',
+      nextPage: 'পরের পৃষ্ঠা',
+      chooseTheme: 'থিম নির্বাচন',
+    },
   },
 });
 

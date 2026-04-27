@@ -40,7 +40,7 @@ services:
 
   redis:
     image: redis:7-alpine
-    command: redis-server --appendonly yes --maxmemory 256mb --maxmemory-policy allkeys-lru
+    command: redis-server --appendonly yes --maxmemory 256mb --maxmemory-policy allkeys-lru --requirepass ${REDIS_PASSWORD:-redis_pass}
     volumes:
       - redisdata:/data
     healthcheck:
@@ -80,7 +80,7 @@ services:
       NODE_ENV: production
       PORT: 3001
       DATABASE_URL: postgresql://wa_user:${POSTGRES_PASSWORD:-wa_pass}@pgbouncer:5432/wa_marketing
-      REDIS_URL: redis://redis:6379
+      REDIS_URL: redis://:${REDIS_PASSWORD:-redis_pass}@redis:6379
       MINIO_ENDPOINT: minio
       MINIO_PORT: 9000
       MINIO_ACCESS_KEY: ${MINIO_ROOT_USER:-minioadmin}
@@ -150,7 +150,7 @@ services:
     environment:
       NODE_ENV: production
       PORT: 3002
-      REDIS_URL: redis://redis:6379
+      REDIS_URL: redis://:${REDIS_PASSWORD:-redis_pass}@redis:6379
       SESSION_DATA_PATH: /data/sessions
     volumes:
       - session_data:/data/sessions
@@ -237,8 +237,23 @@ volumes:
   prometheus_data:
   grafana_data:
 
+# Use 'overlay' for Docker Swarm deployments, 'bridge' for docker-compose.
+# Switch to overlay + internal when deploying with: docker stack deploy
 networks:
   backend_net:
     driver: bridge
+    # For Swarm: driver: overlay, internal: true
   frontend_net:
     driver: bridge
+    # For Swarm: driver: overlay
+
+# Uncomment for Docker Swarm secret management:
+# secrets:
+#   db_password:
+#     external: true
+#   jwt_secret:
+#     external: true
+#   minio_secret_key:
+#     external: true
+#   redis_password:
+#     external: true

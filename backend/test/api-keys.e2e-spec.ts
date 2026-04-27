@@ -79,4 +79,20 @@ describe('API Key Auth (e2e)', () => {
       expect(key).not.toHaveProperty('keyHash');
     }
   });
+
+  it('GET /api/v1/contacts with expired key returns 401', async () => {
+    // Create a key with past expiry
+    const res = await request(app.getHttpServer())
+      .post('/api/v1/api-keys')
+      .set({ Authorization: `Bearer ${proToken}` })
+      .send({ name: 'Expired Key', expiresAt: '2020-01-01T00:00:00Z' })
+      .expect(201);
+
+    const expiredKey = res.body.data.key;
+
+    await request(app.getHttpServer())
+      .get('/api/v1/contacts')
+      .set({ 'X-API-Key': expiredKey })
+      .expect(401);
+  });
 });

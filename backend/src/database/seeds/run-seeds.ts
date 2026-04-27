@@ -14,6 +14,7 @@ import { seedPlanUsage } from './11-plan-usage.seed';
 import { seedApiKeys } from './12-api-keys.seed';
 import { seedDateAutomations } from './13-date-automations.seed';
 import { seedUserSettings } from './14-user-settings.seed';
+import { seedBirthdayTodayContacts } from './15-birthday-today-contacts.seed';
 
 async function run() {
   if (process.env.NODE_ENV === 'production') {
@@ -59,6 +60,7 @@ async function run() {
     await seedApiKeys(ds, users);
     await seedDateAutomations(ds, users);
     await seedUserSettings(ds, users);
+    await seedBirthdayTodayContacts(ds, users);
 
     console.log('✅ Seeding completed successfully');
   } finally {
