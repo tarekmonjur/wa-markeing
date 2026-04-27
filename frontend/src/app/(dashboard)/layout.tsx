@@ -20,6 +20,11 @@ import {
   Sparkles,
   Webhook,
   UsersRound,
+  CreditCard,
+  Key,
+  Clock,
+  CalendarDays,
+  BookOpen,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -32,7 +37,11 @@ const navItems = [
   { href: '/inbox', label: 'Inbox', icon: Inbox },
   { href: '/automations/auto-replies', label: 'Auto-Replies', icon: Bot },
   { href: '/automations/drip-sequences', label: 'Drip Sequences', icon: GitBranch },
+  { href: '/automations/date-based', label: 'Date Automations', icon: CalendarDays },
   { href: '/settings/whatsapp', label: 'WhatsApp', icon: MessageSquare },
+  { href: '/settings/plan', label: 'Plan & Usage', icon: CreditCard },
+  { href: '/settings/api-keys', label: 'API Keys', icon: Key },
+  { href: '/settings/send-window', label: 'Send Window', icon: Clock },
   { href: '/analytics', label: 'Analytics', icon: BarChart3 },
   { href: '/ai', label: 'AI Generator', icon: Sparkles },
   { href: '/integrations/webhooks', label: 'Webhooks', icon: Webhook },
@@ -88,6 +97,15 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           })}
         </nav>
         <div className="border-t p-4">
+          <a
+            href="/docs"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-gray-600 hover:bg-gray-100 hover:text-gray-900 mb-2"
+          >
+            <BookOpen className="h-5 w-5" />
+            Documentation
+          </a>
           <div className="mb-2 text-sm text-muted-foreground truncate">
             {user?.email}
           </div>

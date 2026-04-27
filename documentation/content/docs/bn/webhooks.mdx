@@ -1,0 +1,90 @@
+---
+title: ওয়েবহুক
+description: HMAC-SHA256 সাইনিং সহ HTTPS ওয়েবহুকে প্ল্যাটফর্ম ইভেন্ট সাবস্ক্রাইব করুন
+---
+
+## এটা কী করে
+
+আপনার নিয়ন্ত্রিত URL এ রিয়েল-টাইম HTTP POST নোটিফিকেশন পান। CRM, Zapier, n8n, Make বা আপনার নিজের সিস্টেমের সাথে ইন্টিগ্রেশনের জন্য ব্যবহার করুন।
+
+প্রতিটি ডেলিভারি **HMAC-SHA256** দিয়ে সাইন করা হয়।
+
+## সাপোর্টেড ইভেন্ট
+
+| ইভেন্ট | কখন ফায়ার হয় |
+|--------|--------------|
+| `campaign.started` | ক্যাম্পেইন `RUNNING` হলে |
+| `campaign.completed` | সব মেসেজ প্রক্রিয়া শেষ |
+| `campaign.paused` | ক্যাম্পেইন পজ করা হলে |
+| `campaign.failed` | ক্যাম্পেইন বাতিল বা ত্রুটি |
+| `message.sent` | মেসেজ হোয়াটসঅ্যাপে গ্রহণ |
+| `message.delivered` | মেসেজ ডিভাইসে পৌঁছেছে |
+| `message.read` | মেসেজ পড়া হয়েছে |
+| `message.failed` | মেসেজ ডেলিভারি ব্যর্থ |
+| `contact.opted_out` | কন্টাক্ট STOP পাঠিয়েছে |
+
+## ধাপসমূহ
+
+### ১. এন্ডপয়েন্ট রেজিস্টার
+
+```json
+POST /api/v1/webhooks
+{
+  "url": "https://your-server.com/webhook",
+  "secret": "my-signing-secret-32chars-min",
+  "events": ["campaign.completed", "message.failed"]
+}
+```
+
+- `url` অবশ্যই **HTTPS** হতে হবে
+- `secret` হলো আপনার HMAC সাইনিং কী
+
+### ২. HMAC সিগনেচার যাচাই
+
+প্রতিটি ডেলিভারিতে `X-Webhook-Signature` হেডার থাকে:
+
+```javascript
+const crypto = require('crypto');
+
+function verifySignature(rawBody, signature, secret) {
+  const expected = crypto
+    .createHmac('sha256', secret)
+    .update(rawBody)
+    .digest('hex');
+  return `sha256=${expected}` === signature;
+}
+```
+
+## রিট্রাই শিডিউল
+
+| চেষ্টা | বিরতি |
+|--------|--------|
+| ১ম | তাৎক্ষণিক |
+| ২য় | ১ মিনিট |
+| ৩য় | ৫ মিনিট |
+| ৪র্থ | ৩০ মিনিট |
+| ৫ম | ২ ঘণ্টা |
+| ৫ এর পর | `ABANDONED` |
+
+## SSRF প্রতিরোধ
+
+- অবশ্যই `https://` হতে হবে
+- DNS IP অবশ্যই পাবলিক হতে হবে
+- প্রাইভেট IP ব্লক করা (`10.x`, `172.16-31.x`, `192.168.x`)
+
+## API এন্ডপয়েন্ট
+
+```
+POST   /api/v1/webhooks                        — এন্ডপয়েন্ট রেজিস্টার
+GET    /api/v1/webhooks                        — তালিকা
+PATCH  /api/v1/webhooks/:id                    — আপডেট
+DELETE /api/v1/webhooks/:id                    — মুছুন
+GET    /api/v1/webhooks/:id/deliveries         — ডেলিভারি ইতিহাস
+POST   /api/v1/webhooks/:id/test               — টেস্ট পিং
+```
+
+## সীমাবদ্ধতা
+
+- প্রতি ব্যবহারকারীতে সর্বোচ্চ ১০ এন্ডপয়েন্ট
+- ডেলিভারি টাইমআউট: প্রতি চেষ্টায় ১০ সেকেন্ড
+- `secret` শুধু লেখা যায় (পরে পড়া যায় না)

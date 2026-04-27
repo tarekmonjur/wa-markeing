@@ -1,0 +1,75 @@
+---
+title: ক্যাম্পেইন চালানো
+description: রিয়েল-টাইম প্রোগ্রেস মনিটরিং সহ বাল্ক হোয়াটসঅ্যাপ মেসেজ ক্যাম্পেইন তৈরি ও চালান
+---
+
+## ক্যাম্পেইন লাইফসাইকেল
+
+```
+DRAFT → RUNNING → COMPLETED
+         ↓    ↗
+       PAUSED
+         ↓
+       FAILED (বাতিল)
+```
+
+## ধাপসমূহ
+
+### ১. ক্যাম্পেইন তৈরি
+
+```json
+POST /api/v1/campaigns
+{
+  "name": "ঈদ অফার ২০২৫",
+  "sessionId": "uuid",
+  "templateId": "uuid",
+  "groupId": "uuid"
+}
+```
+
+### ২. ক্যাম্পেইন শুরু
+
+```
+POST /api/v1/campaigns/:id/start
+```
+
+**প্রয়োজনীয়তা:**
+- হোয়াটসঅ্যাপ সেশন `CONNECTED` থাকতে হবে
+- ক্যাম্পেইনে টেমপ্লেট ও কন্টাক্ট গ্রুপ থাকতে হবে
+- গ্রুপে কমপক্ষে একটি অপ্ট-আউট হয়নি এমন কন্টাক্ট থাকতে হবে
+
+### ৩. প্রোগ্রেস মনিটর
+
+WebSocket এ রিয়েল-টাইম প্রোগ্রেস: `ws://localhost:3001/ws`
+
+| ইভেন্ট | বিবরণ |
+|--------|--------|
+| `campaign:progress` | পাঠানো/ডেলিভার/ব্যর্থ সংখ্যা আপডেট |
+| `campaign:completed` | ক্যাম্পেইন শেষ |
+
+### ৪. পজ / বাতিল
+
+```
+POST /api/v1/campaigns/:id/pause
+POST /api/v1/campaigns/:id/cancel
+```
+
+## রেট লিমিটিং
+
+| সেটিং | মান |
+|-------|------|
+| ন্যূনতম বিরতি | মেসেজের মধ্যে ২ সেকেন্ড |
+| দৈনিক সর্বোচ্চ | প্রতি সেশনে দিনে ২০০ মেসেজ |
+| পুনঃচেষ্টা | ৩ বার (exponential backoff) |
+
+## API এন্ডপয়েন্ট
+
+```
+POST   /api/v1/campaigns              — তৈরি
+GET    /api/v1/campaigns              — তালিকা (পেজিনেটেড)
+GET    /api/v1/campaigns/:id          — বিস্তারিত
+PATCH  /api/v1/campaigns/:id          — আপডেট (শুধু DRAFT)
+POST   /api/v1/campaigns/:id/start    — পাঠানো শুরু
+POST   /api/v1/campaigns/:id/pause    — পজ
+POST   /api/v1/campaigns/:id/cancel   — বাতিল
+```

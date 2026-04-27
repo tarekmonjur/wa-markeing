@@ -30,6 +30,7 @@ import { SettingsModule } from './settings/settings.module';
 import { AutomationsModule } from './automations/automations.module';
 import { ApiKeysModule } from './api-keys/api-keys.module';
 import { PublicApiModule } from './public-api/public-api.module';
+import { MetricsModule } from './metrics/metrics.module';
 
 @Module({
   imports: [
@@ -89,6 +90,7 @@ import { PublicApiModule } from './public-api/public-api.module';
     AutomationsModule,
     ApiKeysModule,
     PublicApiModule,
+    MetricsModule,
   ],
   providers: [
     {

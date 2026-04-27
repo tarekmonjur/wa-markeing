@@ -1,0 +1,83 @@
+---
+title: ড্রিপ সিকোয়েন্স
+description: সময়-বিলম্বিত মাল্টি-স্টেপ অটোমেটেড মেসেজ সিকোয়েন্স তৈরি করুন
+---
+
+## এটা কী করে
+
+ড্রিপ সিকোয়েন্স হলো সময়-বিলম্বিত মেসেজের সিরিজ যা স্বয়ংক্রিয়ভাবে কন্টাক্টদের কাছে পাঠানো হয়। স্টেপ ডিফাইন করুন (টেমপ্লেট, বিলম্ব, এবং শর্ত সহ), কন্টাক্ট এনরোল করুন, বাকিটা সিস্টেম সামলাবে।
+
+**ব্যবহার:** নতুন কাস্টমার অনবোর্ডিং, ফলো-আপ, রমজানের সেহরি/ইফতার প্রমোশন।
+
+## স্টেপ কন্ডিশন
+
+| কন্ডিশন | আচরণ |
+|---------|--------|
+| `ALWAYS` | সবসময় পাঠাবে |
+| `NO_REPLY` | কন্টাক্ট রিপ্লাই দিলে স্কিপ করবে |
+| `REPLIED` | শুধু কন্টাক্ট রিপ্লাই দিলেই পাঠাবে |
+
+## এনরোলমেন্ট স্ট্যাটাস
+
+| স্ট্যাটাস | অর্থ |
+|----------|-------|
+| `ACTIVE` | স্বাভাবিকভাবে স্টেপ পাচ্ছে |
+| `PAUSED` | স্টেপ সাময়িক বন্ধ |
+| `COMPLETED` | সব স্টেপ পাঠানো হয়েছে |
+| `UNSUBSCRIBED` | কন্টাক্ট STOP পাঠিয়েছে |
+
+## ধাপসমূহ
+
+### ১. সিকোয়েন্স তৈরি
+
+```json
+POST /api/v1/drip-sequences
+{
+  "name": "নতুন কাস্টমার অনবোর্ডিং",
+  "isActive": true
+}
+```
+
+### ২. স্টেপ যোগ করুন
+
+```json
+POST /api/v1/drip-sequences/:id/steps
+{ "stepNumber": 1, "templateId": "uuid-স্বাগতম", "delayHours": 0, "condition": "ALWAYS" }
+
+POST /api/v1/drip-sequences/:id/steps
+{ "stepNumber": 2, "templateId": "uuid-ডিসকাউন্ট", "delayHours": 24, "condition": "NO_REPLY" }
+
+POST /api/v1/drip-sequences/:id/steps
+{ "stepNumber": 3, "templateId": "uuid-শেষ-সুযোগ", "delayHours": 72, "condition": "NO_REPLY" }
+```
+
+### ৩. কন্টাক্ট এনরোল করুন
+
+```json
+POST /api/v1/drip-sequences/:id/enroll
+{
+  "contactIds": ["uuid1", "uuid2", "uuid3"],
+  "sessionId": "wa-session-uuid"
+}
+```
+
+### উদাহরণ: ৩ দিনের রমজান সিকোয়েন্স
+
+| স্টেপ | টেমপ্লেট | বিলম্ব | শর্ত |
+|-------|---------|--------|------|
+| ১ | সেহরির মেনু | ০ ঘণ্টা | ALWAYS |
+| ২ | ইফতার স্পেশাল | ১২ ঘণ্টা | ALWAYS |
+| ৩ | পূর্ণ দিনের প্যাকেজ | ২৪ ঘণ্টা | NO_REPLY |
+
+## API এন্ডপয়েন্ট
+
+```
+POST   /api/v1/drip-sequences                  — সিকোয়েন্স তৈরি
+GET    /api/v1/drip-sequences                  — তালিকা
+GET    /api/v1/drip-sequences/:id              — বিস্তারিত
+PATCH  /api/v1/drip-sequences/:id              — আপডেট
+DELETE /api/v1/drip-sequences/:id              — মুছুন
+
+POST   /api/v1/drip-sequences/:id/steps        — স্টেপ যোগ
+POST   /api/v1/drip-sequences/:id/enroll       — কন্টাক্ট এনরোল
+```

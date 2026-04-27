@@ -175,6 +175,23 @@ services:
       redis:
         condition: service_healthy
 
+  documentation:
+    build:
+      context: ./documentation
+      dockerfile: Dockerfile
+      target: dev
+    ports:
+      - '3003:3003'
+    volumes:
+      - ./documentation/src:/app/src
+      - ./documentation/content:/app/content
+      - /app/node_modules
+      - /app/.next
+      - /app/.source
+    environment:
+      NEXT_TELEMETRY_DISABLED: 1
+    command: ['npm', 'run', 'dev']
+
 volumes:
   pgdata:
   redisdata:

@@ -1,0 +1,78 @@
+---
+title: গুগল শিটস কন্টাক্ট সিঙ্ক
+description: OAuth2 দিয়ে গুগল শিটস থেকে কন্টাক্ট ইম্পোর্ট করুন — ঐচ্ছিক দৈনিক অটো-সিঙ্ক সহ
+---
+
+## এটা কী করে
+
+গুগল স্প্রেডশিট থেকে সরাসরি কন্টাক্ট ইম্পোর্ট করুন এবং ঐচ্ছিক দৈনিক অটো-সিঙ্ক দিয়ে সিঙ্ক রাখুন।
+
+## পূর্বশর্ত
+
+- এনভায়রনমেন্টে `GOOGLE_CLIENT_ID` ও `GOOGLE_CLIENT_SECRET`
+- স্প্রেডশিটে হেডার রো থাকতে হবে
+- কমপক্ষে একটি কলামে ফোন নম্বর
+
+## ধাপসমূহ
+
+### ১. গুগল অ্যাকাউন্ট সংযোগ
+
+**ইন্টিগ্রেশন → গুগল শিটস → গুগল অ্যাকাউন্ট সংযোগ করুন** এ যান। **রিড-অনলি** (`spreadsheets.readonly`) অ্যাক্সেস দিন।
+
+OAuth টোকেন **AES-256-GCM এনক্রিপ্টেড** অবস্থায় সংরক্ষিত হয়।
+
+### ২. স্প্রেডশিট নির্বাচন
+
+```
+GET /api/v1/integrations/google-sheets/sheets
+```
+
+### ৩. কলাম ম্যাপিং
+
+```json
+POST /api/v1/integrations/google-sheets/import
+{
+  "sheetId": "1BxiMVs0XRA5...",
+  "mappings": {
+    "phone": "B",
+    "name": "A",
+    "email": "C",
+    "custom": { "city": "D", "business": "E" }
+  }
+}
+```
+
+### ৪. অটো-সিঙ্ক চালু করুন (ঐচ্ছিক)
+
+```json
+PATCH /api/v1/integrations/google-sheets/:integrationId
+{
+  "autoSync": true,
+  "syncTime": "02:00"
+}
+```
+
+দৈনিক **রাত ০২:০০ UTC** তে চলে।
+
+## নিরাপত্তা
+
+| বিষয় | কিভাবে হ্যান্ডেল করা হয় |
+|-------|------------------------|
+| OAuth টোকেন | AES-256-GCM এনক্রিপ্টেড |
+| স্কোপ | শুধু `spreadsheets.readonly` |
+| SSRF প্রতিরোধ | বৈধ গুগল শিটস URL যাচাই |
+
+## API এন্ডপয়েন্ট
+
+```
+GET    /api/v1/integrations/google-sheets/auth       — OAuth2 ফ্লো শুরু
+POST   /api/v1/integrations/google-sheets/import      — কন্টাক্ট ইম্পোর্ট
+PATCH  /api/v1/integrations/google-sheets/:id         — অটো-সিঙ্ক আপডেট
+DELETE /api/v1/integrations/google-sheets             — সংযোগ বিচ্ছিন্ন
+```
+
+## সীমাবদ্ধতা
+
+- প্রতি ইম্পোর্টে সর্বোচ্চ ১০,০০০ রো
+- রিড-অনলি — শিটে লেখা যায় না
+- অটো-সিঙ্ক দৈনিক একবার
