@@ -9,6 +9,7 @@ import { APP_GUARD } from '@nestjs/core';
 import { envValidationSchema } from './config/env.validation';
 import { JwtAuthGuard } from './auth/guards/jwt-auth.guard';
 import { RolesGuard } from './common/guards/roles.guard';
+import { PlanFeatureGuard } from './common/guards/plan-feature.guard';
 import { AuthModule } from './auth/auth.module';
 import { ContactsModule } from './contacts/contacts.module';
 import { TemplatesModule } from './templates/templates.module';
@@ -24,6 +25,11 @@ import { AnalyticsModule } from './analytics/analytics.module';
 import { AiModule } from './ai/ai.module';
 import { WebhooksModule } from './webhooks/webhooks.module';
 import { TeamsModule } from './teams/teams.module';
+import { BillingModule } from './billing/billing.module';
+import { SettingsModule } from './settings/settings.module';
+import { AutomationsModule } from './automations/automations.module';
+import { ApiKeysModule } from './api-keys/api-keys.module';
+import { PublicApiModule } from './public-api/public-api.module';
 
 @Module({
   imports: [
@@ -78,6 +84,11 @@ import { TeamsModule } from './teams/teams.module';
     AiModule,
     WebhooksModule,
     TeamsModule,
+    BillingModule,
+    SettingsModule,
+    AutomationsModule,
+    ApiKeysModule,
+    PublicApiModule,
   ],
   providers: [
     {
@@ -87,6 +98,10 @@ import { TeamsModule } from './teams/teams.module';
     {
       provide: APP_GUARD,
       useClass: RolesGuard,
+    },
+    {
+      provide: APP_GUARD,
+      useClass: PlanFeatureGuard,
     },
   ],
 })

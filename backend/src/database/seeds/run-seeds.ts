@@ -10,6 +10,10 @@ import { seedDripSequences } from './07-drip-sequences.seed';
 import { seedCampaignStats } from './08-campaign-stats.seed';
 import { seedAbTests } from './09-ab-tests.seed';
 import { seedWebhooks } from './10-webhooks.seed';
+import { seedPlanUsage } from './11-plan-usage.seed';
+import { seedApiKeys } from './12-api-keys.seed';
+import { seedDateAutomations } from './13-date-automations.seed';
+import { seedUserSettings } from './14-user-settings.seed';
 
 async function run() {
   if (process.env.NODE_ENV === 'production') {
@@ -49,6 +53,12 @@ async function run() {
       .map((c: any) => c.id);
     await seedAbTests(ds, completedCampaignIds);
     await seedWebhooks(ds, users.map((u) => u.id));
+
+    // Phase 4 seeds
+    await seedPlanUsage(ds, users);
+    await seedApiKeys(ds, users);
+    await seedDateAutomations(ds, users);
+    await seedUserSettings(ds, users);
 
     console.log('✅ Seeding completed successfully');
   } finally {

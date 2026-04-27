@@ -1,0 +1,94 @@
+---
+title: Scheduling Campaigns
+description: Schedule campaigns for future delivery with BullMQ delayed jobs and recurring patterns
+---
+
+## What This Does
+
+Campaigns can be scheduled for future delivery instead of launching immediately. The system uses BullMQ delayed jobs stored in Redis, so scheduled campaigns survive server restarts and fire at the exact target time.
+
+## Prerequisites
+
+- Campaign must exist in **DRAFT** status
+- WhatsApp session must be **CONNECTED** (verified at launch time)
+- `scheduledAt` must be a future timestamp
+
+## Step-by-Step
+
+### 1. Create a Campaign
+
+```json
+POST /api/v1/campaigns
+{
+  "name": "Eid Mubarak 2026",
+  "sessionId": "uuid",
+  "templateId": "uuid",
+  "groupId": "uuid"
+}
+```
+
+### 2. Schedule for Future Delivery
+
+```json
+POST /api/v1/campaigns/:id/schedule
+{
+  "scheduledAt": "2026-05-01T10:00:00.000Z",
+  "timezone": "Asia/Dhaka"
+}
+```
+
+- `scheduledAt` — ISO 8601 UTC timestamp
+- `timezone` — IANA timezone string (e.g. `Asia/Dhaka`). Used for display only; stored as UTC.
+
+### 3. Cancel a Scheduled Campaign
+
+```
+DELETE /api/v1/campaigns/:id/schedule
+```
+
+Reverts status to **DRAFT**. The campaign can then be re-scheduled or launched manually.
+
+### 4. Reschedule
+
+```json
+PATCH /api/v1/campaigns/:id/reschedule
+{
+  "scheduledAt": "2026-05-02T08:00:00.000Z"
+}
+```
+
+## Status Flow
+
+```
+DRAFT → SCHEDULED → RUNNING → COMPLETED
+```
+
+From `SCHEDULED`:
+- `DELETE /campaigns/:id/schedule` → back to `DRAFT`
+- `PATCH /campaigns/:id/reschedule` → stays `SCHEDULED` with new time
+
+## Recurring Campaigns
+
+| Pattern | Description |
+|---------|-------------|
+| **daily** | Repeats every day at the same time |
+| **weekly** | Repeats on selected `daysOfWeek` (0=Sun, 6=Sat) |
+| **monthly** | Repeats on a specific `dayOfMonth` (1–28) |
+
+Set an optional `endDate` (ISO string) to auto-stop recurring campaigns. Monthly `dayOfMonth` is capped at 28 for February safety.
+
+## API Endpoints
+
+```
+POST   /api/v1/campaigns/:id/schedule    — Schedule a campaign
+PATCH  /api/v1/campaigns/:id/reschedule  — Change scheduled time
+DELETE /api/v1/campaigns/:id/schedule    — Cancel scheduled campaign
+```
+
+## Troubleshooting
+
+| Problem | Cause | Fix |
+|---------|-------|-----|
+| `400 Bad Request` | Timestamp is in the past | Use a future UTC timestamp |
+| Campaign stays `SCHEDULED` | Redis or BullMQ worker down | Check Redis connectivity |
+| Session `DISCONNECTED` at launch | Phone went offline | Reconnect WhatsApp, reschedule |

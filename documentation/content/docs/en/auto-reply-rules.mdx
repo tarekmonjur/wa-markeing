@@ -1,0 +1,96 @@
+---
+title: Auto-Reply Rules
+description: Set up keyword-triggered automatic responses to inbound WhatsApp messages
+---
+
+## What This Does
+
+Auto-reply rules automatically respond to inbound WhatsApp messages based on keywords. When a contact sends a message that matches a rule, the configured reply is sent instantly.
+
+The system also handles opt-out and opt-in keywords automatically (STOP / START).
+
+## Match Types
+
+| Type | Behaviour | Example keyword | Matches |
+|------|-----------|-----------------|---------|
+| `EXACT` | Full message equals keyword | `stop` | `"STOP"`, `"stop"` — not `"please stop"` |
+| `CONTAINS` | Keyword anywhere in message | `price` | `"what is the price?"` |
+| `STARTS_WITH` | Message begins with keyword | `hi` | `"Hi there"` |
+| `REGEX` | ECMAScript regex pattern | `order\s*\d+` | `"order 12345"` |
+
+All matching is **case-insensitive**.
+
+## Priority System
+
+Rules are evaluated in descending priority order. Higher number = checked first.
+
+- System **STOP** rule: priority `9999` (always checked first)
+- User rules: default priority `0`
+
+When multiple rules match, only the **highest-priority** rule fires.
+
+## System Opt-Out Keywords
+
+These keywords automatically opt out the contact:
+
+```
+stop · unsubscribe · cancel · end · quit · বন্ধ
+```
+
+**Reply sent:** "You have been unsubscribed. Reply START to re-subscribe."
+
+## System Opt-In Keywords
+
+```
+start · yes · শুরু
+```
+
+**Reply sent:** "You have been re-subscribed. You will now receive messages again."
+
+## Create a Rule
+
+```json
+POST /api/v1/auto-reply-rules
+{
+  "keyword": "price",
+  "matchType": "CONTAINS",
+  "replyBody": "আমাদের মূল্য তালিকার জন্য এখানে ক্লিক করুন: https://example.com/price",
+  "priority": 10,
+  "isActive": true
+}
+```
+
+### Scope to a Session (Optional)
+
+Add `sessionId` to limit to one WhatsApp account:
+
+```json
+{
+  "sessionId": "uuid",
+  "keyword": "order",
+  "matchType": "CONTAINS",
+  "replyBody": "আপনার অর্ডার নম্বরটি জানান।"
+}
+```
+
+## REGEX Safety
+
+User-supplied regex patterns are validated to prevent **ReDoS** attacks. Catastrophic backtracking patterns like `(a+)+` are rejected.
+
+## API Endpoints
+
+```
+POST   /api/v1/auto-reply-rules          — Create rule
+GET    /api/v1/auto-reply-rules          — List all rules
+GET    /api/v1/auto-reply-rules/:id      — Get rule
+PATCH  /api/v1/auto-reply-rules/:id      — Update rule
+DELETE /api/v1/auto-reply-rules/:id      — Delete rule
+```
+
+## Troubleshooting
+
+| Problem | Cause | Fix |
+|---------|-------|-----|
+| Rule never fires | `isActive: false` or session not connected | Check rule and session status |
+| Wrong rule fires | Priority tie | Increase priority on intended rule |
+| `400` on REGEX | Pattern flagged as ReDoS risk | Simplify the pattern |

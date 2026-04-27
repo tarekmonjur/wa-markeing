@@ -1,0 +1,89 @@
+---
+title: Analytics Dashboard
+description: View pre-aggregated campaign analytics with delivery, read rates, and CSV/PDF export
+---
+
+## What This Does
+
+The analytics dashboard provides pre-aggregated statistics on message delivery, read rates, and reply rates — across all campaigns over a rolling 30-day window. Data loads in under one second even with millions of message logs.
+
+## Dashboard Sections
+
+### Overview (Last 30 Days)
+
+| Metric | Definition |
+|--------|-----------|
+| Sent | Total messages where status reached `SENT` |
+| Delivered | Messages acknowledged by recipient's phone |
+| Read | Messages opened by recipient |
+| Failed | Messages that could not be delivered |
+| Delivery Rate | `deliveredCount / sentCount × 100` |
+| Read Rate | `readCount / deliveredCount × 100` |
+| Reply Rate | `repliedCount / deliveredCount × 100` |
+
+### Per-Campaign Analytics
+
+Shows same metrics scoped to a single campaign, plus:
+- **Delivery Funnel:** Total → Sent → Delivered → Read → Replied
+- **Per-Contact Status Table:** paginated list with individual message status
+
+## Step-by-Step
+
+### 1. View Overview
+
+```
+GET /api/v1/analytics/overview
+```
+
+### 2. View Campaign Stats
+
+```
+GET /api/v1/analytics/campaigns/:id
+```
+
+### 3. Export a Report
+
+**Start export:**
+```json
+POST /api/v1/analytics/campaigns/:id/export
+{ "format": "csv" }
+```
+
+**Poll for completion:**
+```
+GET /api/v1/analytics/exports/:jobId
+```
+
+| Status | Meaning |
+|--------|---------|
+| `PENDING` | Job queued |
+| `PROCESSING` | File being generated |
+| `COMPLETE` | File ready (download within 24 hours) |
+| `FAILED` | Export failed; retry |
+
+## Real-Time Updates
+
+Stats update via WebSocket during active campaigns:
+
+```
+campaign:progress  { campaignId, sentCount, deliveredCount, failedCount, status }
+```
+
+## API Endpoints
+
+```
+GET  /api/v1/analytics/overview                      — 30-day aggregate stats
+GET  /api/v1/analytics/campaigns                     — Campaign list with stats
+GET  /api/v1/analytics/campaigns/:id                 — Single campaign stats
+GET  /api/v1/analytics/campaigns/:id/contacts        — Per-contact delivery status
+POST /api/v1/analytics/campaigns/:id/export          — Start async export
+GET  /api/v1/analytics/exports/:jobId                — Poll export status
+```
+
+## Troubleshooting
+
+| Problem | Cause | Fix |
+|---------|-------|-----|
+| Stats show 0 | Stats events not processed | Check BullMQ worker logs |
+| Export stuck at `PROCESSING` | Worker overloaded | Retry after a few minutes |
+| `deliveryRate` is null | `sentCount = 0` | Expected on new campaigns |

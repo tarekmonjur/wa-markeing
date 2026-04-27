@@ -1,0 +1,91 @@
+---
+title: Conversation Inbox
+description: View all inbound and outbound messages grouped by contact with manual reply support
+---
+
+## What This Does
+
+The Inbox shows every inbound and outbound message grouped by contact. You can read full message threads and send one-off manual replies directly — no campaign needed.
+
+## Inbox Structure
+
+### Conversation List
+
+Shows one row per contact, sorted by most recent message:
+
+| Field | Description |
+|-------|-------------|
+| Contact name / phone | Identified by E.164 phone number |
+| Last message preview | Truncated body of the last message |
+| Last message time | UTC timestamp |
+| Direction badge | `INBOUND` or `OUTBOUND` |
+| Unread count | Number of unread inbound messages |
+
+The list auto-refreshes every **10 seconds**.
+
+### Message Thread
+
+Full message history with a single contact in chronological order:
+
+| Field | Description |
+|-------|-------------|
+| Body | Message text |
+| Direction | `INBOUND` / `OUTBOUND` |
+| Status | `PENDING → SENT → DELIVERED → READ` |
+| Timestamp | Sent / delivered / read times |
+| Media | Presigned URL for attachments |
+
+## Step-by-Step
+
+### 1. View All Conversations
+
+```
+GET /api/v1/inbox?limit=50&offset=0
+```
+
+### 2. Open a Thread
+
+```
+GET /api/v1/inbox/:contactId?limit=50
+```
+
+### 3. Load Older Messages (Cursor Pagination)
+
+```
+GET /api/v1/inbox/:contactId?cursor=<messageId>&limit=50
+```
+
+Returns messages **before** the cursor. Response includes `hasMore: true/false`.
+
+### 4. Send a Manual Reply
+
+```json
+POST /api/v1/inbox/:contactId/send
+{
+  "sessionId": "wa-session-uuid",
+  "body": "আপনার অর্ডারটি আগামীকাল ডেলিভারি হবে।"
+}
+```
+
+## Real-Time Updates
+
+New inbound messages arrive via WebSocket:
+
+```
+message:inbound  { contactId, message: { id, body, direction, status, createdAt } }
+```
+
+## API Endpoints
+
+```
+GET  /api/v1/inbox                      — List conversations
+GET  /api/v1/inbox/:contactId           — Get message thread
+POST /api/v1/inbox/:contactId/send      — Send manual message
+```
+
+## Troubleshooting
+
+| Problem | Cause | Fix |
+|---------|-------|-----|
+| Inbox is empty | No messages yet | Send a test campaign or connect WhatsApp |
+| Manual reply fails | Session disconnected | Reconnect WhatsApp session |

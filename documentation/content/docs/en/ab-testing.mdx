@@ -1,0 +1,96 @@
+---
+title: A/B Message Testing
+description: Run statistically significant A/B tests on message variants using chi-squared testing
+---
+
+## What This Does
+
+A/B testing lets you send two different message variants to different portions of the same contact group and measure which performs better. The system uses chi-squared significance testing to determine genuine winners.
+
+## Concepts
+
+| Term | Meaning |
+|------|---------|
+| Variant A | The first message version |
+| Variant B | The second message version (the challenger) |
+| Split ratio | Fraction of contacts receiving Variant A (default `0.5`) |
+| Significance | p-value < 0.05 means the difference is not due to chance |
+
+## Step-by-Step
+
+### 1. Create Campaign (DRAFT)
+
+```json
+POST /api/v1/campaigns
+{
+  "name": "Eid Offer — A/B Test",
+  "sessionId": "uuid",
+  "groupId": "uuid"
+}
+```
+
+### 2. Set Up the A/B Test
+
+```json
+POST /api/v1/campaigns/:id/ab-test
+{
+  "variantA": "uuid-template-bengali",
+  "variantB": "uuid-template-english",
+  "splitRatio": 0.5
+}
+```
+
+### 3. Start Campaign
+
+```
+POST /api/v1/campaigns/:id/start
+```
+
+### 4. Monitor Results
+
+```
+GET /api/v1/campaigns/:id/ab-test/results
+```
+
+**Response:**
+```json
+{
+  "results": {
+    "A": { "sent": 50, "delivered": 47, "read": 31 },
+    "B": { "sent": 50, "delivered": 45, "read": 22 }
+  },
+  "significance": {
+    "pValue": 0.031,
+    "isSignificant": true,
+    "winner": "A",
+    "message": "Variant A is significantly better (p < 0.05)"
+  }
+}
+```
+
+### Reading the Significance
+
+| Message | Meaning |
+|---------|---------|
+| "Not enough data yet" | < 100 delivered per variant |
+| "No significant difference" | Variants perform similarly |
+| "Variant A is significantly better" | Use Variant A |
+| "Variant B is significantly better" | Use Variant B |
+
+The test uses a **chi-squared 2×2 contingency table** comparing read rates. p-value < 0.05 → winner confirmed.
+
+## API Endpoints
+
+```
+POST   /api/v1/campaigns/:id/ab-test            — Set up A/B test
+GET    /api/v1/campaigns/:id/ab-test            — Get test config
+GET    /api/v1/campaigns/:id/ab-test/results    — Get live results
+PATCH  /api/v1/campaigns/:id/ab-test            — Update status
+```
+
+## Limitations
+
+- Only one A/B test per campaign
+- Requires at least **100 delivered messages per variant**
+- Metric: **read rate** (read / delivered)
+- Cannot add A/B test to a `RUNNING` campaign
