@@ -59,6 +59,12 @@ export class MessageLog {
   @Column({ nullable: true })
   failReason?: string;
 
+  @Column({ nullable: true })
+  optOutSource?: string; // INBOUND_KEYWORD | ADMIN_MANUAL | CSV_IMPORT_FLAG
+
+  @Column({ nullable: true })
+  triggeredBy?: string; // contact's own message or admin user ID
+
   @CreateDateColumn()
   createdAt: Date;
 

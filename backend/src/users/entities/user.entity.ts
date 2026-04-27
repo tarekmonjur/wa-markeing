@@ -40,6 +40,9 @@ export class User {
   @Column({ nullable: true })
   refreshTokenHash: string;
 
+  @Column({ default: 'UTC' })
+  timezone: string;
+
   @CreateDateColumn()
   createdAt: Date;
 

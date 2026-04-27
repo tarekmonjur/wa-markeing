@@ -127,7 +127,7 @@ export class InboundProcessor extends WorkerHost {
     contact.optedOutAt = new Date();
     await this.contactRepository.save(contact);
 
-    // Log the opt-out event
+    // Log the opt-out event with audit trail
     await this.messageLogRepository.save(
       this.messageLogRepository.create({
         userId,
@@ -136,6 +136,8 @@ export class InboundProcessor extends WorkerHost {
         body: 'You have been unsubscribed. Reply START to re-subscribe.',
         status: MessageStatus.SENT,
         sentAt: new Date(),
+        optOutSource: 'INBOUND_KEYWORD',
+        triggeredBy: contact.id,
       }),
     );
 

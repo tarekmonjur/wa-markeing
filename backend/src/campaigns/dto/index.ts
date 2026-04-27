@@ -8,8 +8,34 @@ import {
   IsNumber,
   Min,
   Max,
+  IsObject,
+  ValidateNested,
 } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { Type } from 'class-transformer';
+
+export class RecurrenceDto {
+  @ApiProperty({ enum: ['daily', 'weekly', 'monthly'] })
+  @IsIn(['daily', 'weekly', 'monthly'])
+  type: 'daily' | 'weekly' | 'monthly';
+
+  @ApiPropertyOptional({ description: '0=Sun, 6=Sat (for weekly)', example: [1, 3, 5] })
+  @IsArray()
+  @IsOptional()
+  daysOfWeek?: number[];
+
+  @ApiPropertyOptional({ description: '1–28 (for monthly)', example: 15 })
+  @IsNumber()
+  @Min(1)
+  @Max(28)
+  @IsOptional()
+  dayOfMonth?: number;
+
+  @ApiPropertyOptional({ description: 'ISO date, optional end date' })
+  @IsDateString()
+  @IsOptional()
+  endDate?: string;
+}
 
 export class CreateCampaignDto {
   @ApiProperty({ example: 'Eid Offer 2025' })
@@ -39,6 +65,12 @@ export class CreateCampaignDto {
   @IsString()
   @IsOptional()
   timezone?: string;
+
+  @ApiPropertyOptional({ description: 'Recurring schedule pattern' })
+  @ValidateNested()
+  @Type(() => RecurrenceDto)
+  @IsOptional()
+  recurrence?: RecurrenceDto;
 }
 
 export class UpdateCampaignDto {

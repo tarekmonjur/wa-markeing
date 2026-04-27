@@ -45,6 +45,14 @@ export class Campaign {
   @Column({ nullable: true })
   scheduledAt?: Date;
 
+  @Column({ type: 'jsonb', nullable: true })
+  recurrence?: {
+    type: 'daily' | 'weekly' | 'monthly';
+    daysOfWeek?: number[];   // 0=Sun, 6=Sat (for weekly)
+    dayOfMonth?: number;     // 1–28 (for monthly)
+    endDate?: string;        // ISO date, optional
+  };
+
   @Column({ nullable: true })
   startedAt?: Date;
 

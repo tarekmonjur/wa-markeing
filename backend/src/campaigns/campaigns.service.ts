@@ -66,6 +66,7 @@ export class CampaignsService {
       groupId: dto.groupId,
       status: CampaignStatus.DRAFT,
       scheduledAt: dto.scheduledAt ? new Date(dto.scheduledAt) : undefined,
+      recurrence: dto.recurrence,
     });
 
     const saved = await this.campaignRepository.save(campaign);
