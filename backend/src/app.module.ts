@@ -16,6 +16,9 @@ import { WhatsappModule } from './whatsapp/whatsapp.module';
 import { MediaModule } from './media/media.module';
 import { GatewayModule } from './gateway/gateway.module';
 import { HealthModule } from './health/health.module';
+import { AutoReplyModule } from './auto-reply/auto-reply.module';
+import { InboxModule } from './inbox/inbox.module';
+import { DripModule } from './drip/drip.module';
 
 @Module({
   imports: [
@@ -63,6 +66,9 @@ import { HealthModule } from './health/health.module';
     MediaModule,
     GatewayModule,
     HealthModule,
+    AutoReplyModule,
+    InboxModule,
+    DripModule,
   ],
   providers: [
     {

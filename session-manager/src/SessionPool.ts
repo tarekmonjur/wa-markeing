@@ -1,6 +1,7 @@
 import { Logger } from 'pino';
 import { BaileysInstance, SessionState } from './BaileysInstance';
 import { SessionStore } from './SessionStore';
+import { InboundHandler } from './InboundHandler';
 
 /**
  * Manages a pool of Baileys instances, one per session.
@@ -13,6 +14,7 @@ export class SessionPool {
   constructor(
     sessionsPath: string,
     private readonly logger: Logger,
+    private readonly inboundHandler?: InboundHandler,
   ) {
     this.store = new SessionStore(sessionsPath);
   }
@@ -22,12 +24,31 @@ export class SessionPool {
       return this.instances.get(sessionId)!;
     }
 
+    // Clear stale creds from any previous failed attempt
+    this.store.clearCreds(sessionId);
+
     const credPath = this.store.getCredPath(sessionId);
     const instance = new BaileysInstance(sessionId, credPath, this.logger);
 
     instance.on('state', (state: SessionState) => {
       this.logger.info({ sessionId, state }, 'Session state changed');
     });
+
+    // Forward inbound messages to the handler
+    if (this.inboundHandler) {
+      instance.on('messages', (m: any) => {
+        const messages = m.messages ?? [];
+        if (messages.length > 0) {
+          this.inboundHandler!.handleMessages(sessionId, messages).catch(
+            (err) =>
+              this.logger.error(
+                { sessionId, error: err.message },
+                'Failed to handle inbound messages',
+              ),
+          );
+        }
+      });
+    }
 
     this.instances.set(sessionId, instance);
     await instance.connect();

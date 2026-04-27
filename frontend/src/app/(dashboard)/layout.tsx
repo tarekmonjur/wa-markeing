@@ -13,6 +13,9 @@ import {
   MessageSquare,
   FolderOpen,
   LogOut,
+  Inbox,
+  Bot,
+  GitBranch,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -22,6 +25,9 @@ const navItems = [
   { href: '/contacts/groups', label: 'Groups', icon: FolderOpen },
   { href: '/templates', label: 'Templates', icon: FileText },
   { href: '/campaigns', label: 'Campaigns', icon: Send },
+  { href: '/inbox', label: 'Inbox', icon: Inbox },
+  { href: '/automations/auto-replies', label: 'Auto-Replies', icon: Bot },
+  { href: '/automations/drip-sequences', label: 'Drip Sequences', icon: GitBranch },
   { href: '/settings/whatsapp', label: 'WhatsApp', icon: MessageSquare },
 ];
 

@@ -4,6 +4,7 @@ import { Repository } from 'typeorm';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { WaSession } from './entities/wa-session.entity';
 import { SessionStatus } from '../database/enums';
+import { UpdateSessionDto } from './dto';
 
 @Injectable()
 export class WhatsappService {
@@ -15,9 +16,11 @@ export class WhatsappService {
     private readonly eventEmitter: EventEmitter2,
   ) {}
 
-  async createSession(userId: string): Promise<WaSession> {
+  async createSession(userId: string, displayName: string, phoneNumber: string): Promise<WaSession> {
     const session = this.sessionRepository.create({
       userId,
+      displayName,
+      phoneNumber,
       status: SessionStatus.DISCONNECTED,
     });
     const saved = await this.sessionRepository.save(session);
@@ -40,6 +43,29 @@ export class WhatsappService {
       throw new NotFoundException('Session not found');
     }
     return session;
+  }
+
+  async updateSession(userId: string, id: string, dto: UpdateSessionDto): Promise<WaSession> {
+    const session = await this.findSession(userId, id);
+    if (dto.displayName !== undefined) session.displayName = dto.displayName;
+    if (dto.phoneNumber !== undefined) session.phoneNumber = dto.phoneNumber;
+    return this.sessionRepository.save(session);
+  }
+
+  async updateSessionStatusForUser(
+    userId: string,
+    sessionId: string,
+    status: string,
+    phoneNumber?: string,
+    displayName?: string,
+  ): Promise<WaSession> {
+    const session = await this.findSession(userId, sessionId);
+    return this.updateSessionStatus(
+      session.id,
+      status as SessionStatus,
+      phoneNumber,
+      displayName,
+    );
   }
 
   async updateSessionStatus(
@@ -69,6 +95,15 @@ export class WhatsappService {
       status: saved.status,
     });
 
+    return saved;
+  }
+
+  async disconnectSession(userId: string, id: string): Promise<WaSession> {
+    const session = await this.findSession(userId, id);
+    session.status = SessionStatus.DISCONNECTED;
+    const saved = await this.sessionRepository.save(session);
+    this.eventEmitter.emit('session.status', { sessionId: saved.id, status: saved.status });
+    this.logger.log(`Session disconnected: ${id}`);
     return saved;
   }
 

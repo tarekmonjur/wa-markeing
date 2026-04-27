@@ -21,6 +21,10 @@ export default function NewCampaignPage() {
   const [sessionId, setSessionId] = useState('');
   const [groupId, setGroupId] = useState('');
   const [templateId, setTemplateId] = useState('');
+  const [scheduledAt, setScheduledAt] = useState('');
+  const [timezone, setTimezone] = useState(
+    Intl.DateTimeFormat().resolvedOptions().timeZone,
+  );
 
   const sessions = useQuery({
     queryKey: ['sessions'],
@@ -39,7 +43,14 @@ export default function NewCampaignPage() {
 
   const createMutation = useMutation({
     mutationFn: () =>
-      api.post('/campaigns', { name, sessionId, groupId: groupId || undefined, templateId: templateId || undefined }),
+      api.post('/campaigns', {
+        name,
+        sessionId,
+        groupId: groupId || undefined,
+        templateId: templateId || undefined,
+        scheduledAt: scheduledAt ? new Date(scheduledAt).toISOString() : undefined,
+        timezone: scheduledAt ? timezone : undefined,
+      }),
     onSuccess: (data: any) => {
       toast.success('Campaign created');
       router.push(`/campaigns/${data.id}`);
@@ -115,6 +126,33 @@ export default function NewCampaignPage() {
             {templateId && (
               <div className="mt-2 rounded-md bg-gray-50 p-3 text-sm whitespace-pre-wrap">
                 {templateList.find((t) => t.id === templateId)?.body}
+              </div>
+            )}
+          </div>
+
+          <div className="space-y-2">
+            <Label>Schedule (optional)</Label>
+            <Input
+              type="datetime-local"
+              value={scheduledAt}
+              onChange={(e) => setScheduledAt(e.target.value)}
+              placeholder="Pick a date and time..."
+            />
+            {scheduledAt && (
+              <div className="space-y-1">
+                <Label className="text-xs">Timezone</Label>
+                <select
+                  className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm"
+                  value={timezone}
+                  onChange={(e) => setTimezone(e.target.value)}
+                >
+                  {['Asia/Dhaka', 'Asia/Kolkata', 'UTC', 'America/New_York', 'Europe/London'].map((tz) => (
+                    <option key={tz} value={tz}>{tz}</option>
+                  ))}
+                </select>
+                <p className="text-xs text-muted-foreground">
+                  Campaign will be scheduled and auto-start at the selected time.
+                </p>
               </div>
             )}
           </div>

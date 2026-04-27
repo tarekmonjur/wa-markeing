@@ -16,7 +16,8 @@ import { ContactsService } from '../contacts/contacts.service';
 import { TemplatesService } from '../templates/templates.service';
 import { VariableEngineService } from '../templates/variable-engine.service';
 import { CampaignStatus, SessionStatus, MessageStatus, Direction } from '../database/enums';
-import { CreateCampaignDto, UpdateCampaignDto } from './dto';
+import { CreateCampaignDto, UpdateCampaignDto, ScheduleCampaignDto } from './dto';
+import { SchedulerService } from './scheduler.service';
 
 @Injectable()
 export class CampaignsService {
@@ -35,6 +36,7 @@ export class CampaignsService {
     private readonly templatesService: TemplatesService,
     private readonly variableEngine: VariableEngineService,
     private readonly eventEmitter: EventEmitter2,
+    private readonly schedulerService: SchedulerService,
   ) {}
 
   async create(userId: string, dto: CreateCampaignDto): Promise<Campaign> {
@@ -68,7 +70,16 @@ export class CampaignsService {
 
     const saved = await this.campaignRepository.save(campaign);
     this.logger.log(`Campaign created: ${saved.id} for user ${userId}`);
-    return saved;
+
+    // Auto-schedule if scheduledAt is in the future
+    if (dto.scheduledAt) {
+      const scheduledAt = new Date(dto.scheduledAt);
+      if (scheduledAt.getTime() > Date.now()) {
+        await this.schedulerService.scheduleCampaign(saved.id, scheduledAt);
+      }
+    }
+
+    return this.findById(userId, saved.id);
   }
 
   async findAll(
@@ -114,6 +125,18 @@ export class CampaignsService {
     return this.campaignRepository.save(campaign);
   }
 
+  async getMessageLogs(userId: string, campaignId: string): Promise<MessageLog[]> {
+    // Verify campaign belongs to user
+    await this.findById(userId, campaignId);
+
+    return this.messageLogRepository.find({
+      where: { campaignId },
+      relations: ['contact'],
+      order: { createdAt: 'DESC' },
+      take: 500,
+    });
+  }
+
   async remove(userId: string, id: string): Promise<void> {
     const campaign = await this.findById(userId, id);
 
@@ -136,7 +159,8 @@ export class CampaignsService {
 
     if (
       campaign.status !== CampaignStatus.DRAFT &&
-      campaign.status !== CampaignStatus.PAUSED
+      campaign.status !== CampaignStatus.PAUSED &&
+      campaign.status !== CampaignStatus.SCHEDULED
     ) {
       throw new BadRequestException(
         `Cannot start campaign with status ${campaign.status}`,
@@ -319,12 +343,11 @@ export class CampaignsService {
     campaignId: string,
     status: MessageStatus,
   ): Promise<void> {
-    const field =
-      status === MessageStatus.SENT || status === MessageStatus.DELIVERED
-        ? 'sentCount'
-        : status === MessageStatus.FAILED
-          ? 'failedCount'
-          : null;
+    // Map status to the correct counter field
+    let field: 'sentCount' | 'deliveredCount' | 'failedCount' | null = null;
+    if (status === MessageStatus.SENT) field = 'sentCount';
+    else if (status === MessageStatus.DELIVERED) field = 'deliveredCount';
+    else if (status === MessageStatus.FAILED) field = 'failedCount';
 
     if (!field) return;
 
@@ -365,5 +388,46 @@ export class CampaignsService {
         this.logger.log(`Campaign ${campaignId} completed`);
       }
     }
+  }
+
+  async scheduleCampaign(
+    userId: string,
+    campaignId: string,
+    dto: ScheduleCampaignDto,
+  ): Promise<Campaign> {
+    const campaign = await this.findById(userId, campaignId);
+
+    if (
+      campaign.status !== CampaignStatus.DRAFT &&
+      campaign.status !== CampaignStatus.SCHEDULED
+    ) {
+      throw new BadRequestException(
+        `Cannot schedule campaign with status ${campaign.status}`,
+      );
+    }
+
+    const scheduledAt = new Date(dto.scheduledAt);
+    if (scheduledAt.getTime() <= Date.now()) {
+      throw new BadRequestException('scheduledAt must be in the future');
+    }
+
+    if (campaign.status === CampaignStatus.SCHEDULED) {
+      await this.schedulerService.rescheduleCampaign(campaignId, scheduledAt);
+    } else {
+      await this.schedulerService.scheduleCampaign(campaignId, scheduledAt);
+    }
+
+    return this.findById(userId, campaignId);
+  }
+
+  async cancelSchedule(userId: string, campaignId: string): Promise<Campaign> {
+    const campaign = await this.findById(userId, campaignId);
+
+    if (campaign.status !== CampaignStatus.SCHEDULED) {
+      throw new BadRequestException('Only SCHEDULED campaigns can be unscheduled');
+    }
+
+    await this.schedulerService.cancelScheduledCampaign(campaignId);
+    return this.findById(userId, campaignId);
   }
 }

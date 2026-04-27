@@ -1,4 +1,4 @@
-import { mkdirSync, existsSync } from 'fs';
+import { mkdirSync, existsSync, rmSync } from 'fs';
 import { join } from 'path';
 
 /**
@@ -18,5 +18,16 @@ export class SessionStore {
       mkdirSync(path, { recursive: true });
     }
     return path;
+  }
+
+  /**
+   * Clear stale credentials for a session so Baileys starts fresh.
+   */
+  clearCreds(sessionId: string): void {
+    const path = join(this.rootPath, sessionId);
+    if (existsSync(path)) {
+      rmSync(path, { recursive: true, force: true });
+    }
+    mkdirSync(path, { recursive: true });
   }
 }

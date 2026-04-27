@@ -5,6 +5,7 @@ import makeWASocket, {
   useMultiFileAuthState,
   Browsers,
   WASocket,
+  fetchLatestBaileysVersion,
 } from '@whiskeysockets/baileys';
 
 export type SessionState =
@@ -50,13 +51,26 @@ export class BaileysInstance extends EventEmitter {
 
     const { state: authState, saveCreds } = await useMultiFileAuthState(this.credPath);
 
+    // Fetch latest WA Web version to avoid version mismatch bans
+    let version: [number, number, number] | undefined;
+    try {
+      const { version: v } = await fetchLatestBaileysVersion();
+      version = v;
+      this.logger.info({ sessionId: this.sessionId, version: v }, 'Using WA version');
+    } catch {
+      this.logger.warn({ sessionId: this.sessionId }, 'Could not fetch latest WA version, using default');
+    }
+
     this.socket = makeWASocket({
       auth: authState,
-      browser: Browsers.macOS('Chrome'),
+      version,
+      browser: Browsers.ubuntu('Chrome'),
       printQRInTerminal: false,
       syncFullHistory: false,
       markOnlineOnConnect: false,
       generateHighQualityLinkPreview: false,
+      connectTimeoutMs: 60_000,
+      retryRequestDelayMs: 2000,
       logger: this.logger.child({ sessionId: this.sessionId }) as any,
     });
 
@@ -78,28 +92,47 @@ export class BaileysInstance extends EventEmitter {
 
       if (connection === 'close') {
         const statusCode = (lastDisconnect?.error as any)?.output?.statusCode;
+        const errorMsg = lastDisconnect?.error?.message ?? 'unknown';
 
+        this.logger.info(
+          { sessionId: this.sessionId, statusCode, errorMsg },
+          'Connection closed',
+        );
+
+        // Logged out — stop entirely
         if (statusCode === DisconnectReason.loggedOut) {
           this.setState('DISCONNECTED');
           return;
         }
 
-        if (statusCode === 405 || statusCode === 403) {
-          this.setState('TOS_BLOCK');
+        // Genuine TOS block — only on explicit 403 (forbidden) from WhatsApp
+        // after the session was previously authenticated
+        if (statusCode === DisconnectReason.forbidden) {
+          this.setState('BANNED');
           return;
         }
 
-        // Exponential backoff reconnect
+        // For ALL other cases (connection failure, timeout, restart required, etc.)
+        // retry with exponential backoff — don't give up immediately
         this.reconnectAttempts++;
         if (this.reconnectAttempts > this.MAX_RECONNECT) {
-          this.logger.warn({ sessionId: this.sessionId }, 'Circuit breaker opened — too many failures');
+          this.logger.warn(
+            { sessionId: this.sessionId, attempts: this.reconnectAttempts },
+            'Max reconnect attempts reached',
+          );
           this.setState('DISCONNECTED');
-          setTimeout(() => this.connect(), this.CIRCUIT_OPEN_MS);
+          setTimeout(() => {
+            this.reconnectAttempts = 0;
+            this.connect();
+          }, this.CIRCUIT_OPEN_MS);
           return;
         }
 
-        const delay = Math.min(2000 * Math.pow(2, this.reconnectAttempts - 1), 60000);
-        this.logger.info({ sessionId: this.sessionId, delay, attempt: this.reconnectAttempts }, 'Reconnecting...');
+        const delay = Math.min(2000 * Math.pow(2, this.reconnectAttempts - 1), 30000);
+        this.logger.info(
+          { sessionId: this.sessionId, delay, attempt: this.reconnectAttempts, statusCode },
+          'Reconnecting...',
+        );
         setTimeout(() => this.connect(), delay);
       }
     });
@@ -112,6 +145,8 @@ export class BaileysInstance extends EventEmitter {
   async disconnect(): Promise<void> {
     this.socket?.end(undefined);
     this.socket = null;
+    this.qrCode = null;
+    this.reconnectAttempts = 0;
     this.setState('DISCONNECTED');
   }
 

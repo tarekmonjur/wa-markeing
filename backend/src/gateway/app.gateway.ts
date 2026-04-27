@@ -61,4 +61,13 @@ export class AppGateway implements OnGatewayConnection, OnGatewayDisconnect {
   }): void {
     this.server.emit('contact:import', payload);
   }
+
+  @OnEvent('message.inbound')
+  handleInboundMessage(payload: {
+    userId: string;
+    contactId: string;
+    messageLogId: string;
+  }): void {
+    this.server.emit('message:inbound', payload);
+  }
 }

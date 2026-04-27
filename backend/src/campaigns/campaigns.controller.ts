@@ -13,7 +13,7 @@ import {
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { CampaignsService } from './campaigns.service';
-import { CreateCampaignDto, UpdateCampaignDto } from './dto';
+import { CreateCampaignDto, UpdateCampaignDto, ScheduleCampaignDto } from './dto';
 import { CurrentUser } from '../common/decorators';
 import { User } from '../users/entities/user.entity';
 
@@ -46,6 +46,15 @@ export class CampaignsController {
     @Param('id', ParseUUIDPipe) id: string,
   ) {
     return this.campaignsService.findById(user.id, id);
+  }
+
+  @Get(':id/messages')
+  @ApiOperation({ summary: 'Get message logs for a campaign' })
+  async getMessages(
+    @CurrentUser() user: User,
+    @Param('id', ParseUUIDPipe) id: string,
+  ) {
+    return this.campaignsService.getMessageLogs(user.id, id);
   }
 
   @Patch(':id')
@@ -96,5 +105,26 @@ export class CampaignsController {
     @Param('id', ParseUUIDPipe) id: string,
   ) {
     return this.campaignsService.cancel(user.id, id);
+  }
+
+  @Post(':id/schedule')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Schedule a campaign for future delivery' })
+  async schedule(
+    @CurrentUser() user: User,
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() dto: ScheduleCampaignDto,
+  ) {
+    return this.campaignsService.scheduleCampaign(user.id, id, dto);
+  }
+
+  @Post(':id/unschedule')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Cancel a scheduled campaign (back to DRAFT)' })
+  async unschedule(
+    @CurrentUser() user: User,
+    @Param('id', ParseUUIDPipe) id: string,
+  ) {
+    return this.campaignsService.cancelSchedule(user.id, id);
   }
 }

@@ -31,10 +31,12 @@ describe('WhatsappService', () => {
   });
 
   it('should create a session', async () => {
-    const result = await service.createSession('u1');
+    const result = await service.createSession('u1', 'Test User', '+8801712345678');
     expect(result).toHaveProperty('id');
     expect(sessionRepo.create).toHaveBeenCalledWith({
       userId: 'u1',
+      displayName: 'Test User',
+      phoneNumber: '+8801712345678',
       status: SessionStatus.DISCONNECTED,
     });
   });

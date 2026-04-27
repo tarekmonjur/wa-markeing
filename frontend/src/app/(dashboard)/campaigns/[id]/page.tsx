@@ -28,11 +28,30 @@ interface Campaign {
   session?: { phoneNumber?: string; status: string };
 }
 
+interface MessageLog {
+  id: string;
+  status: string;
+  body?: string;
+  failReason?: string;
+  sentAt?: string;
+  createdAt: string;
+  contact: { phone: string; name?: string };
+}
+
 const statusVariant: Record<string, 'success' | 'warning' | 'destructive' | 'secondary' | 'default'> = {
   COMPLETED: 'success',
   RUNNING: 'warning',
+  SCHEDULED: 'default',
   DRAFT: 'secondary',
   PAUSED: 'default',
+  FAILED: 'destructive',
+};
+
+const msgStatusVariant: Record<string, 'success' | 'warning' | 'destructive' | 'secondary'> = {
+  SENT: 'success',
+  DELIVERED: 'success',
+  READ: 'success',
+  PENDING: 'warning',
   FAILED: 'destructive',
 };
 
@@ -49,6 +68,13 @@ export default function CampaignDetailPage() {
     queryFn: () => api.get<Campaign>(`/campaigns/${id}`),
   });
 
+  const { data: messageLogs } = useQuery({
+    queryKey: ['campaign', id, 'messages'],
+    queryFn: () => api.get<MessageLog[]>(`/campaigns/${id}/messages`),
+    enabled: !!campaign && campaign.status !== 'DRAFT',
+    refetchInterval: campaign?.status === 'RUNNING' ? 5000 : false,
+  });
+
   // WebSocket live update
   useEffect(() => {
     const socket = getSocket();
@@ -60,6 +86,7 @@ export default function CampaignDetailPage() {
     socket.on('campaign:progress', handler);
     socket.on('campaign:completed', () => {
       queryClient.invalidateQueries({ queryKey: ['campaign', id] });
+      queryClient.invalidateQueries({ queryKey: ['campaign', id, 'messages'] });
     });
     return () => {
       socket.off('campaign:progress', handler);
@@ -69,7 +96,11 @@ export default function CampaignDetailPage() {
 
   const startMutation = useMutation({
     mutationFn: () => api.post(`/campaigns/${id}/start`),
-    onSuccess: () => { toast.success('Campaign started'); queryClient.invalidateQueries({ queryKey: ['campaign', id] }); },
+    onSuccess: () => {
+      toast.success('Campaign started');
+      queryClient.invalidateQueries({ queryKey: ['campaign', id] });
+      queryClient.invalidateQueries({ queryKey: ['campaign', id, 'messages'] });
+    },
     onError: (err: Error) => toast.error(err.message),
   });
 
@@ -81,7 +112,11 @@ export default function CampaignDetailPage() {
 
   const cancelMutation = useMutation({
     mutationFn: () => api.post(`/campaigns/${id}/cancel`),
-    onSuccess: () => { toast.success('Campaign cancelled'); queryClient.invalidateQueries({ queryKey: ['campaign', id] }); },
+    onSuccess: () => {
+      toast.success('Campaign cancelled');
+      queryClient.invalidateQueries({ queryKey: ['campaign', id] });
+      queryClient.invalidateQueries({ queryKey: ['campaign', id, 'messages'] });
+    },
     onError: (err: Error) => toast.error(err.message),
   });
 
@@ -103,11 +138,22 @@ export default function CampaignDetailPage() {
   if (isLoading) return <p>Loading...</p>;
   if (!campaign) return <p>Campaign not found</p>;
 
-  const sent = campaign.status === 'RUNNING' ? live.sentCount || campaign.sentCount : campaign.sentCount;
-  const delivered = campaign.status === 'RUNNING' ? live.deliveredCount || campaign.deliveredCount : campaign.deliveredCount;
-  const failed = campaign.status === 'RUNNING' ? live.failedCount || campaign.failedCount : campaign.failedCount;
+  // Calculate stats from actual message logs when available (most accurate)
+  const logs = messageLogs ?? [];
+  const logsSent = logs.filter((l) => l.status === 'SENT').length;
+  const logsDelivered = logs.filter((l) => l.status === 'DELIVERED' || l.status === 'READ').length;
+  const logsFailed = logs.filter((l) => l.status === 'FAILED').length;
+  const logsPending = logs.filter((l) => l.status === 'PENDING').length;
+
+  // Use log-based counts when we have logs, fall back to campaign-level counts
+  const hasLogs = logs.length > 0;
+  const sent = hasLogs ? logsSent : (campaign.status === 'RUNNING' ? live.sentCount || campaign.sentCount : campaign.sentCount);
+  const delivered = hasLogs ? logsDelivered : (campaign.status === 'RUNNING' ? live.deliveredCount || campaign.deliveredCount : campaign.deliveredCount);
+  const failed = hasLogs ? logsFailed : (campaign.status === 'RUNNING' ? live.failedCount || campaign.failedCount : campaign.failedCount);
   const total = campaign.totalContacts || 1;
-  const progress = Math.round((sent / total) * 100);
+  const progress = Math.round(((sent + failed) / total) * 100);
+
+  const failedLogs = logs.filter((l) => l.status === 'FAILED');
 
   return (
     <div className="space-y-6">
@@ -150,26 +196,28 @@ export default function CampaignDetailPage() {
       </div>
 
       {/* Progress Bar */}
-      <Card>
-        <CardContent className="pt-6">
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-sm font-medium">Progress</span>
-            <span className="text-sm text-muted-foreground">{progress}%</span>
-          </div>
-          <div className="h-3 w-full rounded-full bg-gray-200">
-            <div
-              className="h-3 rounded-full bg-brand-500 transition-all duration-500"
-              style={{ width: `${progress}%` }}
-            />
-          </div>
-        </CardContent>
-      </Card>
+      {campaign.status !== 'DRAFT' && (
+        <Card>
+          <CardContent className="pt-6">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-sm font-medium">Progress</span>
+              <span className="text-sm text-muted-foreground">{progress}%</span>
+            </div>
+            <div className="h-3 w-full rounded-full bg-gray-200">
+              <div
+                className="h-3 rounded-full bg-brand-500 transition-all duration-500"
+                style={{ width: `${progress}%` }}
+              />
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Stats */}
-      <div className="grid gap-4 sm:grid-cols-4">
+      <div className="grid gap-4 sm:grid-cols-5">
         <Card>
           <CardContent className="pt-6 text-center">
-            <p className="text-2xl font-bold">{total}</p>
+            <p className="text-2xl font-bold">{campaign.totalContacts}</p>
             <p className="text-sm text-muted-foreground">Total</p>
           </CardContent>
         </Card>
@@ -191,6 +239,14 @@ export default function CampaignDetailPage() {
             <p className="text-sm text-muted-foreground">Failed</p>
           </CardContent>
         </Card>
+        {hasLogs && logsPending > 0 && (
+          <Card>
+            <CardContent className="pt-6 text-center">
+              <p className="text-2xl font-bold text-yellow-600">{logsPending}</p>
+              <p className="text-sm text-muted-foreground">Pending</p>
+            </CardContent>
+          </Card>
+        )}
       </div>
 
       {/* Details */}
@@ -200,9 +256,10 @@ export default function CampaignDetailPage() {
           <CardContent className="space-y-3 text-sm">
             <div className="flex justify-between"><span className="text-muted-foreground">Template</span><span>{campaign.template?.name ?? '—'}</span></div>
             <div className="flex justify-between"><span className="text-muted-foreground">Contact Group</span><span>{campaign.group?.name ?? '—'}</span></div>
-            <div className="flex justify-between"><span className="text-muted-foreground">Session</span><span>{campaign.session?.phoneNumber ?? '—'}</span></div>
+            <div className="flex justify-between"><span className="text-muted-foreground">Session</span><span>{campaign.session?.phoneNumber ?? '—'} ({campaign.session?.status ?? '—'})</span></div>
             <div className="flex justify-between"><span className="text-muted-foreground">Created</span><span>{new Date(campaign.createdAt).toLocaleString()}</span></div>
             {campaign.startedAt && <div className="flex justify-between"><span className="text-muted-foreground">Started</span><span>{new Date(campaign.startedAt).toLocaleString()}</span></div>}
+            {campaign.scheduledAt && <div className="flex justify-between"><span className="text-muted-foreground">Scheduled</span><span>{new Date(campaign.scheduledAt).toLocaleString()}</span></div>}
             {campaign.completedAt && <div className="flex justify-between"><span className="text-muted-foreground">Completed</span><span>{new Date(campaign.completedAt).toLocaleString()}</span></div>}
           </CardContent>
         </Card>
@@ -215,6 +272,80 @@ export default function CampaignDetailPage() {
           </Card>
         )}
       </div>
+
+      {/* Failed Messages */}
+      {failedLogs.length > 0 && (
+        <Card className="border-red-200">
+          <CardHeader>
+            <CardTitle className="text-lg text-red-600">Failed Messages ({failedLogs.length})</CardTitle>
+          </CardHeader>
+          <CardContent className="p-0">
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b bg-red-50">
+                    <th className="px-4 py-2 text-left font-medium">Contact</th>
+                    <th className="px-4 py-2 text-left font-medium">Phone</th>
+                    <th className="px-4 py-2 text-left font-medium">Reason</th>
+                    <th className="px-4 py-2 text-left font-medium">Time</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {failedLogs.map((log) => (
+                    <tr key={log.id} className="border-b last:border-0">
+                      <td className="px-4 py-2">{log.contact?.name || '—'}</td>
+                      <td className="px-4 py-2 font-mono text-xs">{log.contact?.phone}</td>
+                      <td className="px-4 py-2">
+                        <span className="inline-block rounded bg-red-100 px-2 py-0.5 text-xs text-red-700">{log.failReason || 'Unknown'}</span>
+                      </td>
+                      <td className="px-4 py-2 text-muted-foreground">{new Date(log.createdAt).toLocaleString()}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* All Message Logs */}
+      {logs.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-lg">Message Log ({logs.length})</CardTitle>
+          </CardHeader>
+          <CardContent className="p-0">
+            <div className="overflow-x-auto max-h-96 overflow-y-auto">
+              <table className="w-full text-sm">
+                <thead className="sticky top-0">
+                  <tr className="border-b bg-gray-50">
+                    <th className="px-4 py-2 text-left font-medium">Contact</th>
+                    <th className="px-4 py-2 text-left font-medium">Phone</th>
+                    <th className="px-4 py-2 text-left font-medium">Status</th>
+                    <th className="px-4 py-2 text-left font-medium">Error</th>
+                    <th className="px-4 py-2 text-left font-medium">Sent At</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {logs.map((log) => (
+                    <tr key={log.id} className="border-b last:border-0 hover:bg-gray-50">
+                      <td className="px-4 py-2">{log.contact?.name || '—'}</td>
+                      <td className="px-4 py-2 font-mono text-xs">{log.contact?.phone}</td>
+                      <td className="px-4 py-2">
+                        <Badge variant={msgStatusVariant[log.status] ?? 'secondary'}>{log.status}</Badge>
+                      </td>
+                      <td className="px-4 py-2 text-xs text-red-600">{log.failReason || '—'}</td>
+                      <td className="px-4 py-2 text-muted-foreground">
+                        {log.sentAt ? new Date(log.sentAt).toLocaleString() : '—'}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 }

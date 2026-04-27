@@ -93,8 +93,13 @@ services:
       context: ./frontend
       dockerfile: Dockerfile
       target: production
+      args:
+        BACKEND_URL: http://backend:3001
+        SESSION_MANAGER_URL: http://session-manager:3002
     environment:
       NODE_ENV: production
+      BACKEND_URL: http://backend:3001
+      SESSION_MANAGER_URL: http://session-manager:3002
     ports:
       - '3000:3000'
     depends_on:

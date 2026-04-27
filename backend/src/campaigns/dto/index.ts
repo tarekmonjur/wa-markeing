@@ -3,6 +3,11 @@ import {
   IsOptional,
   IsUUID,
   IsDateString,
+  IsIn,
+  IsArray,
+  IsNumber,
+  Min,
+  Max,
 } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
@@ -29,6 +34,11 @@ export class CreateCampaignDto {
   @IsDateString()
   @IsOptional()
   scheduledAt?: string;
+
+  @ApiPropertyOptional({ description: 'IANA timezone, e.g. Asia/Dhaka' })
+  @IsString()
+  @IsOptional()
+  timezone?: string;
 }
 
 export class UpdateCampaignDto {
@@ -46,4 +56,25 @@ export class UpdateCampaignDto {
   @IsUUID()
   @IsOptional()
   groupId?: string;
+
+  @ApiPropertyOptional({ description: 'ISO 8601 datetime for rescheduling' })
+  @IsDateString()
+  @IsOptional()
+  scheduledAt?: string;
+
+  @ApiPropertyOptional({ description: 'IANA timezone' })
+  @IsString()
+  @IsOptional()
+  timezone?: string;
+}
+
+export class ScheduleCampaignDto {
+  @ApiProperty({ description: 'ISO 8601 datetime for scheduling' })
+  @IsDateString()
+  scheduledAt: string;
+
+  @ApiPropertyOptional({ description: 'IANA timezone, e.g. Asia/Dhaka' })
+  @IsString()
+  @IsOptional()
+  timezone?: string;
 }

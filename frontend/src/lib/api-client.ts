@@ -6,6 +6,17 @@ interface RequestOptions {
   headers?: Record<string, string>;
 }
 
+function removeCookie(name: string) {
+  document.cookie = `${name}=;path=/;max-age=0`;
+}
+
+function setCookie(name: string, value: string) {
+  document.cookie = `${name}=${value};path=/;max-age=${60 * 60 * 24 * 7};SameSite=Lax`;
+}
+
+// Mutex to prevent concurrent refresh attempts (thundering herd)
+let refreshPromise: Promise<boolean> | null = null;
+
 async function request<T>(path: string, opts: RequestOptions = {}): Promise<T> {
   const token = typeof window !== 'undefined' ? localStorage.getItem('accessToken') : null;
 
@@ -27,10 +38,14 @@ async function request<T>(path: string, opts: RequestOptions = {}): Promise<T> {
     if (typeof window !== 'undefined') {
       localStorage.removeItem('accessToken');
       localStorage.removeItem('refreshToken');
+      localStorage.removeItem('user');
+      removeCookie('accessToken');
       window.location.href = '/login';
     }
     throw new Error('Unauthorized');
   }
+
+  if (res.status === 204) return undefined as T;
 
   const json = await res.json();
   if (!res.ok) throw new ApiError(json.message ?? 'Request failed', res.status, json);
@@ -38,6 +53,18 @@ async function request<T>(path: string, opts: RequestOptions = {}): Promise<T> {
 }
 
 async function tryRefreshToken(): Promise<boolean> {
+  // Deduplicate concurrent refresh calls
+  if (refreshPromise) return refreshPromise;
+
+  refreshPromise = doRefresh();
+  try {
+    return await refreshPromise;
+  } finally {
+    refreshPromise = null;
+  }
+}
+
+async function doRefresh(): Promise<boolean> {
   const refreshToken = typeof window !== 'undefined' ? localStorage.getItem('refreshToken') : null;
   if (!refreshToken) return false;
 
@@ -52,6 +79,7 @@ async function tryRefreshToken(): Promise<boolean> {
     const data = json.data ?? json;
     localStorage.setItem('accessToken', data.accessToken);
     localStorage.setItem('refreshToken', data.refreshToken);
+    setCookie('accessToken', data.accessToken);
     return true;
   } catch {
     return false;

@@ -1,9 +1,9 @@
 import express from 'express';
 import pino from 'pino';
 import { SessionPool } from './SessionPool';
-import { MessageSender } from './MessageSender';
 import { HealthServer } from './HealthServer';
 import { QRServer } from './QRServer';
+import { InboundHandler } from './InboundHandler';
 
 const logger = pino({
   level: process.env.LOG_LEVEL ?? 'info',
@@ -13,19 +13,17 @@ const logger = pino({
       : undefined,
 });
 
-const REDIS_URL = process.env.REDIS_URL ?? 'redis://localhost:6379';
 const SESSIONS_PATH = process.env.SESSION_FILES_PATH ?? './sessions';
 const PORT = parseInt(process.env.SESSION_MANAGER_PORT ?? '3002', 10);
+const REDIS_URL = process.env.REDIS_URL ?? 'redis://localhost:6379';
 
 async function main() {
   logger.info('Starting session-manager...');
 
-  const pool = new SessionPool(SESSIONS_PATH, logger);
-  const sender = new MessageSender(REDIS_URL, pool, logger);
+  const inboundHandler = new InboundHandler(logger, REDIS_URL);
+  const pool = new SessionPool(SESSIONS_PATH, logger, inboundHandler);
   const qrServer = new QRServer(pool, logger);
   const healthServer = new HealthServer(pool);
-
-  await sender.start();
 
   const app = express();
   app.use(express.json());

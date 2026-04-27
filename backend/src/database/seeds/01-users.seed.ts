@@ -9,8 +9,8 @@ export async function seedUsers(ds: DataSource): Promise<User[]> {
 
   const demoUsers = [
     {
-      email: 'rahim@dhakafashion.com.bd',
-      name: 'Md. Abdur Rahim',
+      email: 'tarek@sbit.com',
+      name: 'Md. Tarek',
       plan: Plan.PRO,
       passwordHash,
       isEmailVerified: true,

@@ -1,5 +1,6 @@
 import { Processor, WorkerHost } from '@nestjs/bullmq';
 import { Logger } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { Job } from 'bullmq';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
@@ -25,10 +26,12 @@ export interface CampaignJobPayload {
 @Processor('campaign')
 export class CampaignProcessor extends WorkerHost {
   private readonly logger = new Logger(CampaignProcessor.name);
+  private readonly sessionManagerUrl: string;
 
   constructor(
     private readonly campaignsService: CampaignsService,
     private readonly rateLimiter: RateLimiterService,
+    private readonly configService: ConfigService,
     @InjectRepository(Contact)
     private readonly contactRepository: Repository<Contact>,
     @InjectRepository(Campaign)
@@ -37,10 +40,12 @@ export class CampaignProcessor extends WorkerHost {
     private readonly messageLogRepository: Repository<MessageLog>,
   ) {
     super();
+    this.sessionManagerUrl =
+      this.configService.get<string>('SESSION_MANAGER_URL') ?? 'http://session-manager:3002';
   }
 
   async process(job: Job<CampaignJobPayload>): Promise<void> {
-    const { campaignId, contactId, sessionId, messageLogId, phone, body } =
+    const { campaignId, contactId, sessionId, messageLogId, phone, body, mediaUrl, mediaType } =
       job.data;
 
     try {
@@ -83,26 +88,31 @@ export class CampaignProcessor extends WorkerHost {
       // 4. Rate limit check
       const waitTime = await this.rateLimiter.acquireToken(sessionId);
       if (waitTime === -1) {
-        // Daily cap exceeded — re-queue with delay until next day
         throw new Error('DAILY_CAP_EXCEEDED');
       }
       if (waitTime > 0) {
         await this.delay(waitTime);
       }
 
-      // 5. Simulate typing presence (the actual Baileys call would be here)
-      // In production, this calls the session-manager service
-      await this.delay(1000 + Math.random() * 2000);
+      // 5. Send via session-manager HTTP API
+      const sendUrl = `${this.sessionManagerUrl}/sessions/${sessionId}/send`;
+      const res = await fetch(sendUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ phone, body, mediaUrl, mediaType }),
+      });
 
-      // 6. Send message
-      // In production, this sends via the session-manager service:
-      // POST /send { sessionId, phone, body, media }
-      // For now, simulate a successful send
-      const waMessageId = `sim_${Date.now()}_${Math.random().toString(36).substring(7)}`;
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({ error: `HTTP ${res.status}` }));
+        throw new Error(err.error ?? `Session-manager returned ${res.status}`);
+      }
+
+      const result = await res.json();
+      const waMessageId = result.waMessageId;
 
       this.rateLimiter.recordSend(sessionId);
 
-      // 7. Update message log
+      // 6. Update message log
       await this.campaignsService.updateMessageStatus(
         messageLogId,
         MessageStatus.SENT,
@@ -118,19 +128,23 @@ export class CampaignProcessor extends WorkerHost {
         `Failed to send message to ${phone}: ${reason}`,
       );
 
-      await this.campaignsService.updateMessageStatus(
-        messageLogId,
-        MessageStatus.FAILED,
-        undefined,
-        reason,
-      );
+      // Only mark as FAILED on final attempt (no more BullMQ retries)
+      // to prevent double-counting failedCount
+      const maxAttempts = (job.opts?.attempts ?? 3);
+      const isLastAttempt = (job.attemptsMade + 1) >= maxAttempts;
 
-      if (reason === 'DAILY_CAP_EXCEEDED') {
-        // Don't retry — will be re-queued for next day
-        return;
+      if (isLastAttempt || reason === 'DAILY_CAP_EXCEEDED' || reason === 'OPTED_OUT') {
+        await this.campaignsService.updateMessageStatus(
+          messageLogId,
+          MessageStatus.FAILED,
+          undefined,
+          reason,
+        );
+        return; // Don't rethrow — final failure
       }
 
-      throw error; // Let BullMQ handle retry
+      // Not the last attempt — let BullMQ retry without marking FAILED
+      throw error;
     }
   }
 
