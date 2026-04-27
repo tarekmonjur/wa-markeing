@@ -1,0 +1,24 @@
+{
+  "name": "wa-marketing",
+  "version": "1.0.0",
+  "private": true,
+  "workspaces": [
+    "packages/*",
+    "backend",
+    "frontend",
+    "session-manager"
+  ],
+  "scripts": {
+    "backend:dev": "npm run dev -w backend",
+    "backend:build": "npm run build -w backend",
+    "backend:test": "npm run test -w backend",
+    "backend:test:e2e": "npm run test:e2e -w backend",
+    "frontend:dev": "npm run dev -w frontend",
+    "session-manager:dev": "npm run dev -w session-manager",
+    "lint": "npm run lint -w backend",
+    "lint:fix": "npm run lint:fix -w backend"
+  },
+  "engines": {
+    "node": ">=20.0.0"
+  }
+}

@@ -1,0 +1,7 @@
+{
+  "name": "WA Marketing",
+  "short_name": "WAMarketing",
+  "icons": [],
+  "start_url": "/",
+  "display": "standalone"
+}

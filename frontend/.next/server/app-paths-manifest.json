@@ -1,0 +1,14 @@
+{
+  "/_not-found/page": "app/_not-found/page.js",
+  "/(auth)/login/page": "app/(auth)/login/page.js",
+  "/(auth)/register/page": "app/(auth)/register/page.js",
+  "/(dashboard)/campaigns/page": "app/(dashboard)/campaigns/page.js",
+  "/(dashboard)/contacts/page": "app/(dashboard)/contacts/page.js",
+  "/(dashboard)/campaigns/new/page": "app/(dashboard)/campaigns/new/page.js",
+  "/(dashboard)/page": "app/(dashboard)/page.js",
+  "/(dashboard)/templates/page": "app/(dashboard)/templates/page.js",
+  "/(dashboard)/campaigns/[id]/page": "app/(dashboard)/campaigns/[id]/page.js",
+  "/(dashboard)/settings/whatsapp/page": "app/(dashboard)/settings/whatsapp/page.js",
+  "/(dashboard)/templates/[id]/page": "app/(dashboard)/templates/[id]/page.js",
+  "/(dashboard)/contacts/[id]/page": "app/(dashboard)/contacts/[id]/page.js"
+}

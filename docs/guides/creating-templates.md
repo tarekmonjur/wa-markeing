@@ -1,0 +1,46 @@
+# Creating Templates
+
+## Variable Syntax
+
+Templates support placeholder variables using double curly braces:
+
+| Variable | Resolves To |
+|----------|-------------|
+| `{{name}}` | Contact name |
+| `{{phone}}` | Contact phone (local format) |
+| `{{email}}` | Contact email |
+| `{{date}}` | Current date (DD/MM/YYYY) |
+| `{{time}}` | Current time (HH:MM) |
+| `{{custom.fieldName}}` | Any custom field from contact |
+
+### Example
+
+```
+আস্সালামু আলাইকুম {{name}} ভাই! 🌙 ঈদ উপলক্ষে সকল পণ্যে ২০% ছাড়!
+শোরুম: {{custom.city}}
+```
+
+## Limits
+
+- Maximum body length: **4096 characters**
+- HTML tags are automatically stripped
+
+## Preview
+
+Test variable resolution before sending:
+
+```
+POST /api/v1/templates/:id/preview
+Body: { "contactId": "uuid" }
+```
+
+## API Endpoints
+
+```
+POST   /api/v1/templates          — Create template
+GET    /api/v1/templates          — List templates
+GET    /api/v1/templates/:id      — Get template
+PATCH  /api/v1/templates/:id      — Update template
+DELETE /api/v1/templates/:id      — Delete template
+POST   /api/v1/templates/:id/preview — Preview with contact
+```
