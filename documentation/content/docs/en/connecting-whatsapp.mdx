@@ -1,0 +1,58 @@
+---
+title: Connecting WhatsApp
+description: Connect your WhatsApp account via QR code scanning using the Baileys session manager
+---
+
+## Overview
+
+WhatsApp sessions are managed via the `/api/v1/whatsapp/sessions` endpoints. Each user can create sessions that will be linked to the Baileys session manager service.
+
+## Session Lifecycle
+
+```
+Create → QR Scan → Connected → (Disconnected)
+```
+
+1. **Create** — `POST /api/v1/whatsapp/sessions` creates a new session record
+2. **QR Scan** — The session-manager service generates a QR code for pairing
+3. **Connected** — Once scanned, status updates to `CONNECTED`
+4. **Disconnected** — If the phone goes offline, status becomes `DISCONNECTED`
+
+## Session States
+
+| Status | Description |
+|--------|-------------|
+| `DISCONNECTED` | Initial state, not yet paired |
+| `CONNECTING` | QR code displayed, waiting for scan |
+| `CONNECTED` | Successfully paired and online |
+| `LOGGED_OUT` | User explicitly logged out |
+
+## API Endpoints
+
+```
+POST   /api/v1/whatsapp/sessions      — Create session
+GET    /api/v1/whatsapp/sessions      — List all sessions
+GET    /api/v1/whatsapp/sessions/:id  — Get session details
+DELETE /api/v1/whatsapp/sessions/:id  — Delete session
+```
+
+## How to Connect
+
+1. Navigate to **Settings → WhatsApp** in the dashboard
+2. Click **Add Account**
+3. Enter a label for the session (e.g., "Sales Team")
+4. A QR code will appear — scan it with your WhatsApp app:
+   - Open WhatsApp → Settings → Linked Devices
+   - Tap "Link a Device"
+   - Scan the QR code
+5. Once scanned, the status changes to `CONNECTED`
+
+The QR code expires after **60 seconds**. Click **Refresh QR** if it expires.
+
+## Troubleshooting
+
+| Problem | Cause | Fix |
+|---------|-------|-----|
+| QR not appearing | Session-manager service is down | Ensure the session-manager service is running |
+| Session keeps disconnecting | Phone internet connection | Check phone internet connection |
+| "Session not found" error | Session was deleted | Create a new session |

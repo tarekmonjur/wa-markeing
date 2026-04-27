@@ -19,6 +19,7 @@ import { Contact } from '../contacts/entities/contact.entity';
 import { ContactsModule } from '../contacts/contacts.module';
 import { TemplatesModule } from '../templates/templates.module';
 import { AnalyticsModule } from '../analytics/analytics.module';
+import { SettingsModule } from '../settings/settings.module';
 
 @Module({
   imports: [
@@ -29,6 +30,7 @@ import { AnalyticsModule } from '../analytics/analytics.module';
     ContactsModule,
     TemplatesModule,
     AnalyticsModule,
+    SettingsModule,
   ],
   controllers: [CampaignsController],
   providers: [

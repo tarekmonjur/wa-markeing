@@ -1,9 +1,10 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { SettingsService } from '../settings/settings.service';
 
 /**
  * Token-bucket rate limiter per session, backed by in-memory Maps.
- * For production, replace with Redis-backed implementation.
+ * Includes smart send-window enforcement.
  *
  * SRP: Only concerned with rate limiting logic.
  * OCP: New limiting strategies can extend this class.
@@ -21,7 +22,10 @@ export class RateLimiterService {
   private readonly lastSendTime = new Map<string, number>();
   private readonly dailyCounts = new Map<string, { count: number; date: string }>();
 
-  constructor(private readonly configService: ConfigService) {}
+  constructor(
+    private readonly configService: ConfigService,
+    private readonly settingsService: SettingsService,
+  ) {}
 
   /**
    * Check if a message can be sent for a given session.
@@ -72,6 +76,18 @@ export class RateLimiterService {
 
   getDailyCap(): number {
     return this.DEFAULT_DAILY_CAP;
+  }
+
+  /**
+   * Check if we're within the user's send window.
+   * Returns 0 if within window (or smart send disabled).
+   * Returns >0 ms to delay until next window.
+   */
+  async getSendWindowDelay(userId: string): Promise<number> {
+    const ms = await this.settingsService.getMsUntilNextWindow(userId);
+    // -1 means smart send is disabled → allow immediately
+    if (ms <= 0) return 0;
+    return ms;
   }
 
   private isDailyCapExceeded(sessionId: string): boolean {

@@ -1,0 +1,145 @@
+---
+title: Local Setup Guide
+description: Set up the WhatsApp Marketing SaaS platform locally with Docker Compose and live reload
+---
+
+## Prerequisites
+
+- Docker & Docker Compose V2
+- (Optional) Node.js 20+ and npm 10+ — only if running apps outside Docker
+
+## Quick Start — Docker with Live Reload
+
+One command starts the full stack with **hot-reload** enabled. Edit any file and changes appear instantly.
+
+```bash
+# 1. Clone
+git clone <repo-url> && cd whatapp
+
+# 2. Start everything
+make dev
+# or: docker compose up --build
+```
+
+### What happens on `docker compose up`
+
+| Step | Service | What it does |
+|------|---------|--------------|
+| 1 | `postgres`, `redis`, `minio` | Infrastructure starts with health checks |
+| 2 | `minio-init` | Creates the `wa-media` bucket (idempotent) |
+| 3 | `backend-migrate` | Runs `npm run schema:sync && npm run seed` |
+| 4 | `backend` | NestJS in **watch mode** — auto-restarts on `.ts` changes |
+| 5 | `frontend` | Next.js **dev server** — HMR, instant browser updates |
+| 6 | `session-manager` | `ts-node-dev --respawn` — auto-restarts on changes |
+
+### How Live Reload Works
+
+Your local source is volume-mounted into the containers:
+
+| Local path | Container path | Watch mode |
+|------------|----------------|------------|
+| `backend/src/` | `/app/src` | `nest start --watch` |
+| `frontend/src/` | `/app/src` | Next.js HMR |
+| `frontend/public/` | `/app/public` | Next.js HMR |
+| `session-manager/src/` | `/app/src` | `ts-node-dev --respawn` |
+
+`node_modules` stays inside the container (anonymous volume) — no conflict with your local OS.
+
+### Access Points
+
+| Service | URL |
+|---------|-----|
+| Frontend | http://localhost:3000 |
+| Backend API | http://localhost:3001/api/v1 |
+| Swagger Docs | http://localhost:3001/docs |
+| MinIO Console | http://localhost:9001 (minioadmin / minioadmin) |
+| Session Manager | http://localhost:3002 |
+| Documentation | http://localhost:3003 |
+
+### Stopping
+
+```bash
+make down        # stop containers
+make clean       # stop + remove volumes (reset all data)
+```
+
+## Makefile Commands
+
+| Command | Description |
+|---------|-------------|
+| `make dev` | Start full dev stack with live reload |
+| `make down` | Stop all containers |
+| `make clean` | Stop containers + remove all volumes (full reset) |
+| `make logs` | Tail logs from all services |
+| `make logs-backend` | Tail backend logs only |
+| `make logs-frontend` | Tail frontend logs only |
+| `make rebuild` | Rebuild images and restart |
+| `make migrate` | Run schema sync + seed on running stack |
+| `make seed` | Run seed data only |
+| `make test` | Run backend unit tests inside container |
+| `make test-cov` | Run tests with coverage |
+| `make prod` | Start production stack |
+| `make prod-down` | Stop production stack |
+| `make infra` | Start only infrastructure (postgres, redis, minio) |
+| `make ps` | Show running containers |
+
+## Local Development Without Docker
+
+Use Docker only for infrastructure, run apps natively:
+
+```bash
+# 1. Start infrastructure only
+make infra
+
+# 2. Install dependencies
+npm install
+
+# 3. Copy env
+cp .env.example .env
+
+# 4. Run database schema sync + seed
+cd backend
+npm run schema:sync
+npm run seed
+
+# 5. Start backend (watch mode)
+npm run dev
+
+# 6. Start frontend (separate terminal)
+cd ../frontend
+npm run dev
+```
+
+## Environment Variables
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `DATABASE_URL` | `postgres://wa_user:wa_pass@localhost:5432/wa_marketing` | PostgreSQL connection |
+| `REDIS_URL` | `redis://localhost:6379` | Redis for BullMQ |
+| `JWT_SECRET` | — | Min 32 chars, required |
+| `MINIO_ENDPOINT` | `localhost` | MinIO S3 endpoint |
+| `MINIO_PORT` | `9000` | MinIO port |
+| `MINIO_ACCESS_KEY` | `minioadmin` | MinIO access key |
+| `MINIO_SECRET_KEY` | `minioadmin` | MinIO secret key |
+| `FRONTEND_URL` | `http://localhost:3000` | CORS origin |
+
+## Running Tests
+
+```bash
+# Unit tests
+npm run test
+
+# E2E tests (requires running infra)
+npm run test:e2e
+
+# Coverage
+npm run test:cov
+```
+
+## Demo Accounts
+
+| Email | Password | Plan |
+|-------|----------|------|
+| rahim@dhakafashion.com.bd | Demo@1234 | PRO |
+| karim@sylhetfoods.com.bd | Demo@1234 | STARTER |
+| nasrin@ctgretail.com.bd | Demo@1234 | FREE |

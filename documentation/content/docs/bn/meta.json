@@ -1,0 +1,25 @@
+{
+  "title": "ডকুমেন্টেশন",
+  "pages": [
+    "---শুরু করুন---",
+    "setup",
+    "connecting-whatsapp",
+    "importing-contacts",
+    "creating-templates",
+    "running-campaigns",
+    "---অটোমেশন---",
+    "scheduling-campaigns",
+    "auto-reply-rules",
+    "conversation-inbox",
+    "drip-sequences",
+    "media-messages",
+    "---উন্নত ফিচার---",
+    "analytics-dashboard",
+    "ab-testing",
+    "ai-copy-generator",
+    "google-sheets-sync",
+    "multi-account-whatsapp",
+    "team-roles",
+    "webhooks"
+  ]
+}

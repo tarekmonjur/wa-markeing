@@ -9,6 +9,9 @@ export interface InboundMessagePayload {
   body: string;
   timestamp: number;
   mediaType?: string;
+  buttonResponseId?: string;
+  listResponseId?: string;
+  listResponseTitle?: string;
 }
 
 /**
@@ -85,6 +88,23 @@ export class InboundHandler {
       else if (msg.message.videoMessage) payload.mediaType = 'VIDEO';
       else if (msg.message.audioMessage) payload.mediaType = 'AUDIO';
       else if (msg.message.documentMessage) payload.mediaType = 'DOCUMENT';
+
+      // Handle interactive message replies
+      if (msg.message.buttonsResponseMessage) {
+        payload.buttonResponseId =
+          msg.message.buttonsResponseMessage.selectedButtonId;
+        payload.body =
+          msg.message.buttonsResponseMessage.selectedDisplayText ?? payload.body;
+      }
+
+      if (msg.message.listResponseMessage) {
+        const listResponse = msg.message.listResponseMessage.singleSelectReply;
+        if (listResponse) {
+          payload.listResponseId = listResponse.selectedRowId;
+          payload.listResponseTitle = msg.message.listResponseMessage.title;
+          payload.body = listResponse.selectedRowId ?? payload.body;
+        }
+      }
 
       await this.inboundQueue.add('process-inbound', payload, {
         removeOnComplete: { count: 5000 },

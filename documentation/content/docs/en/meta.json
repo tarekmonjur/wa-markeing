@@ -1,0 +1,25 @@
+{
+  "title": "Documentation",
+  "pages": [
+    "---Getting Started---",
+    "setup",
+    "connecting-whatsapp",
+    "importing-contacts",
+    "creating-templates",
+    "running-campaigns",
+    "---Automation---",
+    "scheduling-campaigns",
+    "auto-reply-rules",
+    "conversation-inbox",
+    "drip-sequences",
+    "media-messages",
+    "---Advanced---",
+    "analytics-dashboard",
+    "ab-testing",
+    "ai-copy-generator",
+    "google-sheets-sync",
+    "multi-account-whatsapp",
+    "team-roles",
+    "webhooks"
+  ]
+}

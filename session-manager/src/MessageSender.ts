@@ -12,6 +12,16 @@ interface SendMessageJob {
   body: string;
   mediaUrl?: string;
   mediaType?: 'IMAGE' | 'VIDEO' | 'AUDIO' | 'DOCUMENT';
+  interactive?: {
+    type: 'button' | 'list';
+    buttons?: Array<{ id: string; text: string }>;
+    footer?: string;
+    buttonText?: string;
+    sections?: Array<{
+      title: string;
+      rows: Array<{ id: string; title: string; description?: string }>;
+    }>;
+  };
   idempotencyKey: string;
 }
 
@@ -72,7 +82,32 @@ export class MessageSender {
 
     // Send message
     let waMessageId: string;
-    if (data.mediaUrl && data.mediaType) {
+    if (data.interactive) {
+      if (data.interactive.type === 'button' && data.interactive.buttons) {
+        const result = await instance.sendButtons(
+          jid,
+          data.body,
+          data.interactive.buttons,
+          data.interactive.footer,
+        );
+        waMessageId = result.id;
+      } else if (
+        data.interactive.type === 'list' &&
+        data.interactive.sections &&
+        data.interactive.buttonText
+      ) {
+        const result = await instance.sendList(
+          jid,
+          data.body,
+          data.interactive.buttonText,
+          data.interactive.sections,
+          data.interactive.footer,
+        );
+        waMessageId = result.id;
+      } else {
+        throw new Error(`Invalid interactive message configuration`);
+      }
+    } else if (data.mediaUrl && data.mediaType) {
       const result = await instance.sendMedia(
         jid,
         data.mediaUrl,
