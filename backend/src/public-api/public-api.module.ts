@@ -5,6 +5,7 @@ import { PublicApiController } from './public-api.controller';
 import { PublicApiService } from './public-api.service';
 import { Contact } from '../contacts/entities/contact.entity';
 import { CampaignsModule } from '../campaigns/campaigns.module';
+import { ContactsModule } from '../contacts/contacts.module';
 import { AnalyticsModule } from '../analytics/analytics.module';
 
 @Module({
@@ -12,6 +13,7 @@ import { AnalyticsModule } from '../analytics/analytics.module';
     TypeOrmModule.forFeature([Contact]),
     BullModule.registerQueue({ name: 'campaign' }),
     CampaignsModule,
+    ContactsModule,
     AnalyticsModule,
   ],
   controllers: [PublicApiController],
