@@ -10,6 +10,7 @@ import { envValidationSchema } from './config/env.validation';
 import { JwtAuthGuard } from './auth/guards/jwt-auth.guard';
 import { RolesGuard } from './common/guards/roles.guard';
 import { PlanFeatureGuard } from './common/guards/plan-feature.guard';
+import { ApiKeyGuard } from './api-keys/guards/api-key.guard';
 import { AuthModule } from './auth/auth.module';
 import { ContactsModule } from './contacts/contacts.module';
 import { TemplatesModule } from './templates/templates.module';
@@ -93,6 +94,10 @@ import { MetricsModule } from './metrics/metrics.module';
     MetricsModule,
   ],
   providers: [
+    {
+      provide: APP_GUARD,
+      useClass: ApiKeyGuard,
+    },
     {
       provide: APP_GUARD,
       useClass: JwtAuthGuard,

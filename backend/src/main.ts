@@ -3,6 +3,7 @@ import { ValidationPipe, VersioningType } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { Logger } from 'nestjs-pino';
+import helmet from 'helmet';
 import { AppModule } from './app.module';
 import { GlobalExceptionFilter } from './common/filters/global-exception.filter';
 import { ResponseTransformInterceptor } from './common/interceptors/response-transform.interceptor';
@@ -12,6 +13,13 @@ async function bootstrap() {
   const config = app.get(ConfigService);
 
   app.useLogger(app.get(Logger));
+
+  app.use(
+    helmet({
+      hsts: { maxAge: 31536000, includeSubDomains: true },
+      contentSecurityPolicy: config.get('NODE_ENV') === 'production' ? undefined : false,
+    }),
+  );
 
   app.enableCors({
     origin: config.get<string>('FRONTEND_URL'),

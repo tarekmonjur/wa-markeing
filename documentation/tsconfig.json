@@ -26,6 +26,9 @@
       "@/*": [
         "./src/*"
       ],
+      "collections": [
+        "./.source/index"
+      ],
       "collections/*": [
         "./.source/*"
       ]

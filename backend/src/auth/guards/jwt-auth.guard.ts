@@ -19,6 +19,12 @@ export class JwtAuthGuard extends AuthGuard('jwt') {
       return true;
     }
 
+    // Skip JWT check if user already authenticated (e.g. by ApiKeyGuard)
+    const request = context.switchToHttp().getRequest();
+    if (request.user) {
+      return true;
+    }
+
     return super.canActivate(context);
   }
 }
