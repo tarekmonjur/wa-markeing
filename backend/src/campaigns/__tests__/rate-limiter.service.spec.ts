@@ -6,7 +6,8 @@ describe('RateLimiterService', () => {
 
   beforeEach(() => {
     const configService = { get: jest.fn() } as unknown as ConfigService;
-    service = new RateLimiterService(configService);
+    const settingsService = { getMsUntilNextWindow: jest.fn().mockResolvedValue(-1) } as any;
+    service = new RateLimiterService(configService, settingsService);
   });
 
   it('should return 0 wait time on first call', async () => {

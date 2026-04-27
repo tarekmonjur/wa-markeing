@@ -57,7 +57,7 @@ export class PublicApiController {
     @Query('page') page = 1,
     @Query('limit') limit = 20,
   ) {
-    return this.campaignsService.findAll(user.id, { page, limit });
+    return this.campaignsService.findAll(user.id, page, limit);
   }
 
   @Get('campaigns/:id')
@@ -65,7 +65,7 @@ export class PublicApiController {
     @CurrentUser() user: User,
     @Param('id', ParseUUIDPipe) id: string,
   ) {
-    return this.campaignsService.findOne(user.id, id);
+    return this.campaignsService.findById(user.id, id);
   }
 
   @Post('contacts')
@@ -97,6 +97,6 @@ export class PublicApiController {
     @CurrentUser() user: User,
     @Param('id', ParseUUIDPipe) id: string,
   ) {
-    return this.analyticsService.getCampaignAnalytics(user.id, id);
+    return this.analyticsService.getCampaignStats(user.id, id);
   }
 }
