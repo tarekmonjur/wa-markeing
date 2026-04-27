@@ -7,6 +7,9 @@ import { seedTemplates } from './04-templates.seed';
 import { seedCampaigns } from './05-campaigns.seed';
 import { seedAutoReplies } from './06-auto-replies.seed';
 import { seedDripSequences } from './07-drip-sequences.seed';
+import { seedCampaignStats } from './08-campaign-stats.seed';
+import { seedAbTests } from './09-ab-tests.seed';
+import { seedWebhooks } from './10-webhooks.seed';
 
 async function run() {
   if (process.env.NODE_ENV === 'production') {
@@ -26,6 +29,31 @@ async function run() {
     const templatesList = Array.from(templates.values()).flat();
     const contactsList = Array.from(contacts.values()).flat();
     await seedDripSequences(ds, users, templatesList, contactsList, sessions);
+
+    // Phase 3 seeds
+    // Fetch campaigns for stats seeding
+    const campaignRepo = ds.getRepository('campaigns');
+    const allCampaigns = await campaignRepo.find();
+    const userIds = users.map((u) => u.id);
+    const sessionIdList = Array.from(sessions.values()).flat().map((s: any) => s.id);
+    await seedCampaignStats(
+      ds,
+      allCampaigns.map((c: any) => ({
+        id: c.id,
+        totalContacts: c.totalContacts,
+        sentCount: c.sentCount,
+        deliveredCount: c.deliveredCount,
+        failedCount: c.failedCount,
+      })),
+      userIds,
+      sessionIdList,
+    );
+    const completedCampaignIds = allCampaigns
+      .filter((c: any) => c.status === 'COMPLETED')
+      .map((c: any) => c.id);
+    await seedAbTests(ds, completedCampaignIds);
+    await seedWebhooks(ds, users.map((u) => u.id));
+
     console.log('✅ Seeding completed successfully');
   } finally {
     await ds.destroy();

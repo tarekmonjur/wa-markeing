@@ -16,6 +16,10 @@ import {
   Inbox,
   Bot,
   GitBranch,
+  BarChart3,
+  Sparkles,
+  Webhook,
+  UsersRound,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -29,6 +33,11 @@ const navItems = [
   { href: '/automations/auto-replies', label: 'Auto-Replies', icon: Bot },
   { href: '/automations/drip-sequences', label: 'Drip Sequences', icon: GitBranch },
   { href: '/settings/whatsapp', label: 'WhatsApp', icon: MessageSquare },
+  { href: '/whatsapp/accounts', label: 'Accounts', icon: MessageSquare },
+  { href: '/analytics', label: 'Analytics', icon: BarChart3 },
+  { href: '/ai', label: 'AI Generator', icon: Sparkles },
+  { href: '/integrations/webhooks', label: 'Webhooks', icon: Webhook },
+  { href: '/settings/team', label: 'Team', icon: UsersRound },
 ];
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {

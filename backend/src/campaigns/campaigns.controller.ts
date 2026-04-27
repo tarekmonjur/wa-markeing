@@ -13,6 +13,7 @@ import {
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { CampaignsService } from './campaigns.service';
+import { AbTestService, CreateAbTestDto } from './ab-test.service';
 import { CreateCampaignDto, UpdateCampaignDto, ScheduleCampaignDto } from './dto';
 import { CurrentUser } from '../common/decorators';
 import { User } from '../users/entities/user.entity';
@@ -21,7 +22,10 @@ import { User } from '../users/entities/user.entity';
 @ApiBearerAuth()
 @Controller('campaigns')
 export class CampaignsController {
-  constructor(private readonly campaignsService: CampaignsService) {}
+  constructor(
+    private readonly campaignsService: CampaignsService,
+    private readonly abTestService: AbTestService,
+  ) {}
 
   @Post()
   @ApiOperation({ summary: 'Create a campaign' })
@@ -126,5 +130,37 @@ export class CampaignsController {
     @Param('id', ParseUUIDPipe) id: string,
   ) {
     return this.campaignsService.cancelSchedule(user.id, id);
+  }
+
+  // ───── A/B Test Endpoints ─────
+
+  @Post(':id/ab-test')
+  @ApiOperation({ summary: 'Create an A/B test for a campaign' })
+  async createAbTest(
+    @CurrentUser() user: User,
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() dto: Omit<CreateAbTestDto, 'campaignId'>,
+  ) {
+    return this.abTestService.create(user.id, { ...dto, campaignId: id });
+  }
+
+  @Get(':id/ab-test')
+  @ApiOperation({ summary: 'Get A/B test for a campaign' })
+  async getAbTest(
+    @CurrentUser() user: User,
+    @Param('id', ParseUUIDPipe) id: string,
+  ) {
+    return this.abTestService.findByCampaignId(user.id, id);
+  }
+
+  @Get(':id/ab-test/results')
+  @ApiOperation({ summary: 'Get A/B test results with significance' })
+  async getAbTestResults(
+    @CurrentUser() user: User,
+    @Param('id', ParseUUIDPipe) id: string,
+  ) {
+    const test = await this.abTestService.findByCampaignId(user.id, id);
+    if (!test) return null;
+    return this.abTestService.getResults(user.id, test.id);
   }
 }

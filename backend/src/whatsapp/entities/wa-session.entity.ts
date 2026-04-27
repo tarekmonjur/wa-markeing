@@ -29,6 +29,18 @@ export class WaSession {
   @Column({ nullable: true })
   displayName?: string;
 
+  @Column({ default: 'Default Account' })
+  label: string;
+
+  @Column({ default: false })
+  isDefault: boolean;
+
+  @Column({ default: 0 })
+  dailySendCount: number;
+
+  @Column({ type: 'date', nullable: true })
+  dailySendDate?: string;
+
   @Column({ type: 'enum', enum: SessionStatus, default: SessionStatus.DISCONNECTED })
   status: SessionStatus;
 

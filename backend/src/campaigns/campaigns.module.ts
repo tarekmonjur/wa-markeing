@@ -7,20 +7,25 @@ import { CampaignProcessor } from './campaign.processor';
 import { CampaignLaunchProcessor } from './campaign-launch.processor';
 import { SchedulerService } from './scheduler.service';
 import { RateLimiterService } from './rate-limiter.service';
+import { AbTestService } from './ab-test.service';
 import { Campaign } from './entities/campaign.entity';
+import { AbTest } from './entities/ab-test.entity';
+import { AbResult } from './entities/ab-result.entity';
 import { MessageLog } from '../analytics/entities/message-log.entity';
 import { WaSession } from '../whatsapp/entities/wa-session.entity';
 import { Contact } from '../contacts/entities/contact.entity';
 import { ContactsModule } from '../contacts/contacts.module';
 import { TemplatesModule } from '../templates/templates.module';
+import { AnalyticsModule } from '../analytics/analytics.module';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([Campaign, MessageLog, WaSession, Contact]),
+    TypeOrmModule.forFeature([Campaign, AbTest, AbResult, MessageLog, WaSession, Contact]),
     BullModule.registerQueue({ name: 'campaign' }),
     BullModule.registerQueue({ name: 'campaign-launch' }),
     ContactsModule,
     TemplatesModule,
+    AnalyticsModule,
   ],
   controllers: [CampaignsController],
   providers: [
@@ -29,7 +34,8 @@ import { TemplatesModule } from '../templates/templates.module';
     CampaignLaunchProcessor,
     SchedulerService,
     RateLimiterService,
+    AbTestService,
   ],
-  exports: [CampaignsService],
+  exports: [CampaignsService, AbTestService],
 })
 export class CampaignsModule {}

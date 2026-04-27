@@ -17,4 +17,7 @@ export const envValidationSchema = Joi.object({
   SESSION_FILES_PATH: Joi.string().default('./sessions'),
   FRONTEND_URL: Joi.string().default('http://localhost:3000'),
   OPENAI_API_KEY: Joi.string().optional().allow(''),
+  OLLAMA_URL: Joi.string().default('http://ollama:11434'),
+  OLLAMA_MODEL: Joi.string().default('llama3.2:3b'),
+  SESSION_MANAGER_URL: Joi.string().default('http://session-manager:3002'),
 });

@@ -8,6 +8,7 @@ import { LoggerModule } from 'nestjs-pino';
 import { APP_GUARD } from '@nestjs/core';
 import { envValidationSchema } from './config/env.validation';
 import { JwtAuthGuard } from './auth/guards/jwt-auth.guard';
+import { RolesGuard } from './common/guards/roles.guard';
 import { AuthModule } from './auth/auth.module';
 import { ContactsModule } from './contacts/contacts.module';
 import { TemplatesModule } from './templates/templates.module';
@@ -19,6 +20,10 @@ import { HealthModule } from './health/health.module';
 import { AutoReplyModule } from './auto-reply/auto-reply.module';
 import { InboxModule } from './inbox/inbox.module';
 import { DripModule } from './drip/drip.module';
+import { AnalyticsModule } from './analytics/analytics.module';
+import { AiModule } from './ai/ai.module';
+import { WebhooksModule } from './webhooks/webhooks.module';
+import { TeamsModule } from './teams/teams.module';
 
 @Module({
   imports: [
@@ -69,11 +74,19 @@ import { DripModule } from './drip/drip.module';
     AutoReplyModule,
     InboxModule,
     DripModule,
+    AnalyticsModule,
+    AiModule,
+    WebhooksModule,
+    TeamsModule,
   ],
   providers: [
     {
       provide: APP_GUARD,
       useClass: JwtAuthGuard,
+    },
+    {
+      provide: APP_GUARD,
+      useClass: RolesGuard,
     },
   ],
 })
