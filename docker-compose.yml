@@ -148,16 +148,8 @@ services:
       redis:
         condition: service_healthy
 
-  ollama:
-    image: ollama/ollama
-    volumes:
-      - ollama_data:/root/.ollama
-    ports:
-      - '11434:11434'
-
 volumes:
   pgdata:
   redisdata:
   miniodata:
   session-data:
-  ollama_data:

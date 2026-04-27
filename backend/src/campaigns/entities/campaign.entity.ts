@@ -45,9 +45,6 @@ export class Campaign {
   @Column({ nullable: true })
   scheduledAt?: Date;
 
-  @Column({ default: false })
-  autoRotate: boolean;
-
   @Column({ nullable: true })
   startedAt?: Date;
 

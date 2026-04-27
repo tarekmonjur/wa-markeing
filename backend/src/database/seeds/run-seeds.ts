@@ -34,8 +34,6 @@ async function run() {
     // Fetch campaigns for stats seeding
     const campaignRepo = ds.getRepository('campaigns');
     const allCampaigns = await campaignRepo.find();
-    const userIds = users.map((u) => u.id);
-    const sessionIdList = Array.from(sessions.values()).flat().map((s: any) => s.id);
     await seedCampaignStats(
       ds,
       allCampaigns.map((c: any) => ({
@@ -45,8 +43,6 @@ async function run() {
         deliveredCount: c.deliveredCount,
         failedCount: c.failedCount,
       })),
-      userIds,
-      sessionIdList,
     );
     const completedCampaignIds = allCampaigns
       .filter((c: any) => c.status === 'COMPLETED')

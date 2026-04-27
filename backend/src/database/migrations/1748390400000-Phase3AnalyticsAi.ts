@@ -109,9 +109,6 @@ export class Phase3AnalyticsAi1748390400000 implements MigrationInterface {
     await queryRunner.query(`ALTER TABLE "wa_sessions" ADD "dailySendCount" integer NOT NULL DEFAULT 0`);
     await queryRunner.query(`ALTER TABLE "wa_sessions" ADD "dailySendDate" date`);
 
-    // ── Campaign autoRotate ──
-    await queryRunner.query(`ALTER TABLE "campaigns" ADD "autoRotate" boolean NOT NULL DEFAULT false`);
-
     // ── Webhook Endpoints ──
     await queryRunner.query(`
       CREATE TABLE "webhook_endpoints" (
@@ -182,7 +179,6 @@ export class Phase3AnalyticsAi1748390400000 implements MigrationInterface {
     await queryRunner.query(`ALTER TABLE "wa_sessions" DROP COLUMN IF EXISTS "dailySendCount"`);
     await queryRunner.query(`ALTER TABLE "wa_sessions" DROP COLUMN IF EXISTS "isDefault"`);
     await queryRunner.query(`ALTER TABLE "wa_sessions" DROP COLUMN IF EXISTS "label"`);
-    await queryRunner.query(`ALTER TABLE "campaigns" DROP COLUMN IF EXISTS "autoRotate"`);
     await queryRunner.query(`DROP TABLE IF EXISTS "ab_results"`);
     await queryRunner.query(`DROP TABLE IF EXISTS "ab_tests"`);
     await queryRunner.query(`DROP TYPE IF EXISTS "ab_status_enum"`);

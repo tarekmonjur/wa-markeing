@@ -10,7 +10,6 @@ import {
 } from '@nestjs/common';
 import { ApiTags, ApiBearerAuth, ApiOperation } from '@nestjs/swagger';
 import { WhatsappService } from './whatsapp.service';
-import { AccountHealthService } from './account-health.service';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { CreateSessionDto, UpdateSessionDto } from './dto';
 
@@ -18,10 +17,7 @@ import { CreateSessionDto, UpdateSessionDto } from './dto';
 @ApiBearerAuth()
 @Controller('whatsapp/sessions')
 export class WhatsappController {
-  constructor(
-    private readonly whatsappService: WhatsappService,
-    private readonly accountHealth: AccountHealthService,
-  ) {}
+  constructor(private readonly whatsappService: WhatsappService) {}
 
   @Post()
   @ApiOperation({ summary: 'Create a new WhatsApp session with name and phone' })
@@ -80,25 +76,6 @@ export class WhatsappController {
     @Param('id', ParseUUIDPipe) id: string,
   ) {
     return this.whatsappService.disconnectSession(userId, id);
-  }
-
-  @Get(':id/health')
-  @ApiOperation({ summary: 'Get account health score for a session' })
-  getHealth(
-    @CurrentUser('id') userId: string,
-    @Param('id', ParseUUIDPipe) id: string,
-  ) {
-    return this.accountHealth.computeHealth(id);
-  }
-
-  @Get('health/all')
-  @ApiOperation({ summary: 'Get health scores for all sessions' })
-  async getAllHealth(@CurrentUser('id') userId: string) {
-    const sessions = await this.whatsappService.findAllSessions(userId);
-    return this.accountHealth.computeHealthForUser(
-      userId,
-      sessions.map((s) => s.id),
-    );
   }
 
   @Delete(':id')
