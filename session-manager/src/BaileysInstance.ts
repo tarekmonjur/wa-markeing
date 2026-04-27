@@ -191,6 +191,69 @@ export class BaileysInstance extends EventEmitter {
     return { id: sent?.key?.id ?? '' };
   }
 
+  /**
+   * Send a button message (up to 3 buttons).
+   */
+  async sendButtons(
+    jid: string,
+    body: string,
+    buttons: Array<{ id: string; text: string }>,
+    footer?: string,
+  ): Promise<{ id: string }> {
+    if (!this.socket || this.state !== 'CONNECTED') {
+      throw new Error(`Session ${this.sessionId} is not connected`);
+    }
+
+    await this.socket.sendPresenceUpdate('composing', jid);
+    await this.delay(1000 + Math.random() * 2000);
+    await this.socket.sendPresenceUpdate('paused', jid);
+
+    const sent = await this.socket.sendMessage(jid, {
+      text: body,
+      footer: footer ?? '',
+      buttons: buttons.map((b) => ({
+        buttonId: b.id,
+        buttonText: { displayText: b.text },
+        type: 1,
+      })),
+      headerType: 1,
+    } as any);
+
+    return { id: sent?.key?.id ?? '' };
+  }
+
+  /**
+   * Send a list message (menu-style).
+   */
+  async sendList(
+    jid: string,
+    body: string,
+    buttonText: string,
+    sections: Array<{
+      title: string;
+      rows: Array<{ id: string; title: string; description?: string }>;
+    }>,
+    footer?: string,
+  ): Promise<{ id: string }> {
+    if (!this.socket || this.state !== 'CONNECTED') {
+      throw new Error(`Session ${this.sessionId} is not connected`);
+    }
+
+    await this.socket.sendPresenceUpdate('composing', jid);
+    await this.delay(1000 + Math.random() * 2000);
+    await this.socket.sendPresenceUpdate('paused', jid);
+
+    const sent = await this.socket.sendMessage(jid, {
+      text: body,
+      footer: footer ?? '',
+      title: '',
+      buttonText,
+      sections,
+    } as any);
+
+    return { id: sent?.key?.id ?? '' };
+  }
+
   private setState(newState: SessionState): void {
     this.state = newState;
     this.emit('state', newState);

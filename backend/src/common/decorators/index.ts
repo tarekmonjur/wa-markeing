@@ -1,3 +1,4 @@
 export { Public, IS_PUBLIC_KEY } from './public.decorator';
 export { CurrentUser } from './current-user.decorator';
 export { Roles, ROLES_KEY } from './roles.decorator';
+export { PlanFeature, PLAN_FEATURE_KEY } from './plan-feature.decorator';
