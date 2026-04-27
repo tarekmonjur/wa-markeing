@@ -1,0 +1,82 @@
+---
+title: লোকাল সেটআপ গাইড
+description: ডকার কম্পোজ এবং লাইভ রিলোড দিয়ে WhatsApp মার্কেটিং প্ল্যাটফর্ম লোকালি সেটআপ করুন
+---
+
+## পূর্বশর্ত
+
+- Docker ও Docker Compose V2
+- (ঐচ্ছিক) Node.js 20+ এবং npm 10+ — শুধুমাত্র ডকারের বাইরে অ্যাপ চালাতে চাইলে
+
+## দ্রুত শুরু — ডকার দিয়ে লাইভ রিলোড
+
+একটি কমান্ডেই সম্পূর্ণ স্ট্যাক চালু হয় **হট-রিলোড** সহ। যেকোনো ফাইল এডিট করলে তৎক্ষণাৎ পরিবর্তন দেখা যায়।
+
+```bash
+# ১. ক্লোন করুন
+git clone <repo-url> && cd whatapp
+
+# ২. সবকিছু চালু করুন
+make dev
+# অথবা: docker compose up --build
+```
+
+### `docker compose up` তে কী হয়
+
+| ধাপ | সার্ভিস | কী করে |
+|-----|---------|--------|
+| ১ | `postgres`, `redis`, `minio` | ইনফ্রাস্ট্রাকচার হেলথ চেক সহ চালু হয় |
+| ২ | `minio-init` | `wa-media` বাকেট তৈরি করে |
+| ৩ | `backend-migrate` | `npm run schema:sync && npm run seed` চালায় |
+| ৪ | `backend` | NestJS **ওয়াচ মোডে** — `.ts` পরিবর্তনে অটো-রিস্টার্ট |
+| ৫ | `frontend` | Next.js **ডেভ সার্ভার** — HMR, তাৎক্ষণিক আপডেট |
+| ৬ | `session-manager` | `ts-node-dev --respawn` — অটো-রিস্টার্ট |
+
+### অ্যাক্সেস পয়েন্ট
+
+| সার্ভিস | URL |
+|---------|-----|
+| ফ্রন্টেন্ড | http://localhost:3000 |
+| ব্যাকেন্ড API | http://localhost:3001/api/v1 |
+| Swagger ডকস | http://localhost:3001/docs |
+| MinIO কনসোল | http://localhost:9001 (minioadmin / minioadmin) |
+| সেশন ম্যানেজার | http://localhost:3002 |
+| ডকুমেন্টেশন | http://localhost:3003 |
+
+### বন্ধ করা
+
+```bash
+make down        # কন্টেইনার বন্ধ করুন
+make clean       # বন্ধ + সব ভলিউম মুছুন (সম্পূর্ণ রিসেট)
+```
+
+## Makefile কমান্ড
+
+| কমান্ড | বিবরণ |
+|--------|--------|
+| `make dev` | সম্পূর্ণ ডেভ স্ট্যাক চালু (লাইভ রিলোড) |
+| `make down` | সব কন্টেইনার বন্ধ |
+| `make clean` | বন্ধ + সব ভলিউম মুছুন |
+| `make logs` | সব সার্ভিসের লগ দেখুন |
+| `make rebuild` | ইমেজ রিবিল্ড ও রিস্টার্ট |
+| `make test` | ব্যাকেন্ড ইউনিট টেস্ট চালান |
+| `make prod` | প্রোডাকশন স্ট্যাক চালু |
+| `make infra` | শুধু ইনফ্রাস্ট্রাকচার চালু |
+
+## এনভায়রনমেন্ট ভেরিয়েবল
+
+| ভেরিয়েবল | ডিফল্ট | বিবরণ |
+|----------|---------|--------|
+| `DATABASE_URL` | `postgres://wa_user:wa_pass@localhost:5432/wa_marketing` | PostgreSQL সংযোগ |
+| `REDIS_URL` | `redis://localhost:6379` | BullMQ এর জন্য Redis |
+| `JWT_SECRET` | — | ন্যূনতম ৩২ অক্ষর, আবশ্যক |
+| `MINIO_ENDPOINT` | `localhost` | MinIO S3 এন্ডপয়েন্ট |
+| `FRONTEND_URL` | `http://localhost:3000` | CORS অরিজিন |
+
+## ডেমো অ্যাকাউন্ট
+
+| ইমেইল | পাসওয়ার্ড | প্ল্যান |
+|--------|-----------|---------|
+| rahim@dhakafashion.com.bd | Demo@1234 | PRO |
+| karim@sylhetfoods.com.bd | Demo@1234 | STARTER |
+| nasrin@ctgretail.com.bd | Demo@1234 | FREE |

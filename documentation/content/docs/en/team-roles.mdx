@@ -1,0 +1,90 @@
+---
+title: Team Roles & Permissions
+description: Invite team members and control access with ADMIN, AGENT, and VIEWER roles
+---
+
+## What This Does
+
+Invite colleagues to your account and control what they can do. Three role levels with clear permission separation.
+
+## Roles
+
+| Role | Who It's For |
+|------|-------------|
+| `ADMIN` | Account owner and trusted managers — full control |
+| `AGENT` | Sales or support staff — can send and view |
+| `VIEWER` | Stakeholders, clients — read-only access |
+
+## Permissions Matrix
+
+| Action | ADMIN | AGENT | VIEWER |
+|--------|-------|-------|--------|
+| View dashboard & analytics | ✅ | ✅ | ✅ |
+| View contacts, templates, campaigns | ✅ | ✅ | ✅ |
+| View inbox | ✅ | ✅ | ✅ |
+| Create/edit contacts & templates | ✅ | ✅ | ❌ |
+| Import contacts (CSV/Sheets) | ✅ | ✅ | ❌ |
+| Create/start campaigns | ✅ | ✅ | ❌ |
+| Send manual inbox reply | ✅ | ✅ | ❌ |
+| Manage auto-replies & drip sequences | ✅ | ✅ | ❌ |
+| Export analytics reports | ✅ | ✅ | ❌ |
+| Delete contacts/campaigns | ✅ | ❌ | ❌ |
+| Manage WhatsApp sessions | ✅ | ❌ | ❌ |
+| Manage webhooks & integrations | ✅ | ❌ | ❌ |
+| Invite/remove team members | ✅ | ❌ | ❌ |
+| Change member roles | ✅ | ❌ | ❌ |
+
+Forbidden actions return **`403 Forbidden`**.
+
+## Step-by-Step
+
+### 1. Invite a Member
+
+```json
+POST /api/v1/teams/members/invite
+{
+  "email": "agent@example.com",
+  "role": "AGENT"
+}
+```
+
+### 2. Change a Role
+
+```json
+PATCH /api/v1/teams/members/:memberId
+{ "role": "VIEWER" }
+```
+
+Takes effect immediately — no re-login required.
+
+### 3. Remove a Member
+
+```
+DELETE /api/v1/teams/members/:memberId
+```
+
+## Plan Limits
+
+| Plan | Max Team Members |
+|------|-----------------|
+| FREE | 1 (owner only) |
+| STARTER | 3 |
+| PRO | 10 |
+| AGENCY | Unlimited |
+
+## API Endpoints
+
+```
+GET    /api/v1/teams/members             — List members
+POST   /api/v1/teams/members/invite      — Invite member (ADMIN)
+PATCH  /api/v1/teams/members/:id         — Update role (ADMIN)
+DELETE /api/v1/teams/members/:id         — Remove member (ADMIN)
+```
+
+## Troubleshooting
+
+| Problem | Cause | Fix |
+|---------|-------|-----|
+| `403 Forbidden` | Insufficient role | Upgrade to AGENT or ADMIN |
+| Invite email not received | Check spam | Re-send invitation |
+| Role change not taking effect | Cached JWT | Wait up to 15 min (JWT TTL) |

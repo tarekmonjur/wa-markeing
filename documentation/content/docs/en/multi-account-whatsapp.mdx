@@ -1,0 +1,91 @@
+---
+title: Multi-Account WhatsApp
+description: Connect and manage multiple WhatsApp accounts with per-campaign account selection
+---
+
+## What This Does
+
+Connect multiple WhatsApp accounts (phone numbers) and assign each campaign to a specific account. Segment sends by brand, region, or contact list — and distribute volume to reduce ban risk.
+
+## Session Status Reference
+
+| Status | Meaning |
+|--------|---------|
+| `DISCONNECTED` | Not connected |
+| `CONNECTING` | Socket initiating; QR being generated |
+| `QR_READY` | QR displayed; waiting for scan (60 seconds) |
+| `CONNECTED` | Paired and online; ready to send |
+| `TOS_BLOCK` | Flagged by WhatsApp ToS |
+| `BANNED` | Permanently banned |
+
+## Step-by-Step
+
+### 1. Add a New Account
+
+```json
+POST /api/v1/whatsapp/sessions
+{ "label": "Dhaka Sales Team" }
+```
+
+### 2. Connect via QR Code
+
+1. Open WhatsApp → Settings → Linked Devices
+2. Tap "Link a Device"
+3. Scan the QR code (expires after 60 seconds)
+
+### 3. Set as Default
+
+```json
+PATCH /api/v1/whatsapp/sessions/:id
+{ "isDefault": true }
+```
+
+### 4. Assign to Campaign
+
+```json
+POST /api/v1/campaigns
+{
+  "name": "Eid Offer — Dhaka",
+  "sessionId": "uuid-of-dhaka-account",
+  "templateId": "uuid",
+  "groupId": "uuid"
+}
+```
+
+## Plan Limits
+
+| Plan | Max Sessions |
+|------|-------------|
+| FREE | 1 |
+| STARTER | 2 |
+| PRO | 5 |
+| AGENCY | 20 |
+
+## Anti-Ban Best Practices
+
+| Guideline | Reason |
+|-----------|--------|
+| Max 200 messages/day per account | Hard daily cap enforced |
+| 3–8 seconds between messages | Mimics human behaviour |
+| Use different template content | Identical bulk messages = ban signal |
+| Avoid numbers that never replied | Low engagement increases ban risk |
+| Pause on `TOS_BLOCK` | Continuing leads to full ban |
+
+## API Endpoints
+
+```
+POST   /api/v1/whatsapp/sessions         — Register session
+GET    /api/v1/whatsapp/sessions         — List sessions
+GET    /api/v1/whatsapp/sessions/:id     — Session details
+PATCH  /api/v1/whatsapp/sessions/:id     — Update label/default
+DELETE /api/v1/whatsapp/sessions/:id     — Disconnect session
+GET    /api/v1/whatsapp/sessions/:id/qr  — Get QR code (SSE)
+```
+
+## Troubleshooting
+
+| Problem | Cause | Fix |
+|---------|-------|-----|
+| QR expires | 60-second window missed | Click Refresh QR |
+| `CONNECTING` for hours | Socket stuck | Restart session-manager container |
+| `TOS_BLOCK` | Too many messages too fast | Wait 24h, reduce rate, reconnect |

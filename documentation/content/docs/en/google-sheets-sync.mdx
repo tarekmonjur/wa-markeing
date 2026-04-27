@@ -1,0 +1,82 @@
+---
+title: Google Sheets Contact Sync
+description: Import contacts from Google Sheets with optional daily auto-sync via OAuth2
+---
+
+## What This Does
+
+Import contacts directly from a Google Spreadsheet and keep them in sync with optional daily auto-sync. Map any column to contact fields and the platform handles phone normalization and deduplication.
+
+## Prerequisites
+
+- `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET` in environment
+- Spreadsheet must have a header row
+- At least one column with phone numbers
+
+## Step-by-Step
+
+### 1. Connect Google Account
+
+Navigate to **Integrations → Google Sheets → Connect Google Account**. Grant **read-only** access (`spreadsheets.readonly` scope).
+
+OAuth tokens are stored **AES-256-GCM encrypted** in the database.
+
+### 2. Pick a Spreadsheet
+
+```
+GET /api/v1/integrations/google-sheets/sheets
+```
+
+### 3. Map Columns
+
+```json
+POST /api/v1/integrations/google-sheets/import
+{
+  "sheetId": "1BxiMVs0XRA5...",
+  "mappings": {
+    "phone": "B",
+    "name": "A",
+    "email": "C",
+    "custom": { "city": "D", "business": "E" }
+  }
+}
+```
+
+### 4. Enable Auto-Sync (Optional)
+
+```json
+PATCH /api/v1/integrations/google-sheets/:integrationId
+{
+  "autoSync": true,
+  "syncTime": "02:00"
+}
+```
+
+Runs daily at **02:00 UTC**.
+
+## Security
+
+| Concern | How It Is Handled |
+|---------|------------------|
+| OAuth tokens | AES-256-GCM encrypted |
+| Scope | `spreadsheets.readonly` only |
+| Token refresh | Automatic, no re-auth needed |
+| SSRF protection | URL validation for legitimate Google Sheets URLs |
+
+## API Endpoints
+
+```
+GET    /api/v1/integrations/google-sheets/auth       — Start OAuth2 flow
+GET    /api/v1/integrations/google-sheets/callback    — OAuth2 callback
+GET    /api/v1/integrations/google-sheets/sheets      — List sheets
+POST   /api/v1/integrations/google-sheets/import      — Import contacts
+GET    /api/v1/integrations/google-sheets/logs        — Sync history
+PATCH  /api/v1/integrations/google-sheets/:id         — Update auto-sync
+DELETE /api/v1/integrations/google-sheets             — Disconnect
+```
+
+## Limitations
+
+- Maximum 10,000 rows per import
+- Read-only access — cannot write to sheets
+- Auto-sync once daily; manual import anytime

@@ -1,0 +1,86 @@
+---
+title: AI Copy Generator
+description: Generate WhatsApp marketing messages using OpenAI or Ollama with automatic fallback
+---
+
+## What This Does
+
+The AI Copy Generator creates short, engaging WhatsApp marketing messages based on your business context. Two AI providers are supported: **OpenAI** (cloud) and **Ollama** (local, free).
+
+## Prerequisites
+
+- **OpenAI:** `OPENAI_API_KEY` in environment
+- **Ollama:** Docker with `ollama` service and `llama3.2:3b` model pulled
+  ```bash
+  docker exec ollama ollama pull llama3.2:3b
+  ```
+
+## Step-by-Step
+
+### 1. Fill in the Form
+
+| Field | Required | Example |
+|-------|----------|---------|
+| `businessName` | Yes | `Dhaka Fashion House` |
+| `product` | Yes | `Eid collection 2026` |
+| `goal` | Yes | `announce 20% discount, drive online orders` |
+| `tone` | Yes | `friendly`, `professional`, `urgent`, `casual` |
+
+### 2. Generate Copy
+
+```json
+POST /api/v1/ai/generate
+{
+  "businessName": "Sylhet Foods",
+  "product": "Iftar combo meal",
+  "goal": "promote Ramadan iftar deal",
+  "tone": "friendly"
+}
+```
+
+### 3. Response
+
+```json
+{
+  "copy": "ইফতারের সেরা অফার! 🌙 Sylhet Foods-এর Iftar Combo এখন মাত্র ২৯৯ টাকায়। সীমিত সময়ের অফার — এখনই অর্ডার করুন!",
+  "provider": "openai",
+  "remaining": 8
+}
+```
+
+## AI Providers
+
+| Provider | Model | Cost | Quality | Latency |
+|----------|-------|------|---------|---------|
+| OpenAI | `gpt-4o-mini` | Per token | High (EN + BN) | ~1–3s |
+| Ollama | `llama3.2:3b` | Free | Good (EN) | 5–15s |
+
+**Automatic failover:** If OpenAI fails, the system retries with Ollama.
+
+## Daily Quota
+
+| Plan | Daily AI generations |
+|------|---------------------|
+| FREE | 10 |
+| STARTER | 50 |
+| PRO | 100 |
+| AGENCY | 500 |
+
+Counter resets at **midnight UTC**. `429 Too Many Requests` when exhausted.
+
+## Security — Prompt Injection Protection
+
+Inputs are automatically sanitised. The following patterns are stripped:
+- `ignore all previous instructions`
+- `you are now ...`
+- `forget all instructions`
+
+Inputs are truncated to 500 characters and stripped of HTML/Markdown.
+
+## Troubleshooting
+
+| Problem | Cause | Fix |
+|---------|-------|-----|
+| `429 Too Many Requests` | Quota exhausted | Wait for midnight UTC or upgrade plan |
+| Uses Ollama instead of OpenAI | API key missing | Set `OPENAI_API_KEY` in `.env` |
+| Ollama error | Model not pulled | Run `docker exec ollama ollama pull llama3.2:3b` |
