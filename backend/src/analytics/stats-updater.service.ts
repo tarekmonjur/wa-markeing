@@ -28,6 +28,11 @@ export class StatsUpdaterService {
     await this.incrementDailyStat(payload.userId, payload.sessionId, 'sentCount');
   }
 
+  @OnEvent('campaign.started')
+  async onCampaignStarted(payload: { campaignId: string; totalContacts: number }): Promise<void> {
+    await this.ensureCampaignStats(payload.campaignId, payload.totalContacts);
+  }
+
   @OnEvent('message.delivered')
   async onMessageDelivered(payload: MessageEvent): Promise<void> {
     await this.incrementCampaignStat(payload.campaignId, 'deliveredCount');

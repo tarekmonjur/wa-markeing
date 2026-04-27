@@ -338,6 +338,33 @@ export class CampaignsService {
     if (log?.campaignId) {
       await this.incrementCampaignCounter(log.campaignId, status);
     }
+
+    // Emit events for the analytics stats-updater pipeline
+    let sessionId: string | undefined;
+    if (log?.campaignId) {
+      const campaign = await this.campaignRepository.findOne({
+        where: { id: log.campaignId },
+        select: ['sessionId'],
+      });
+      sessionId = campaign?.sessionId;
+    }
+
+    const eventPayload = {
+      campaignId: log?.campaignId,
+      userId: log?.userId,
+      sessionId,
+      messageLogId,
+    };
+
+    if (status === MessageStatus.SENT) {
+      this.eventEmitter.emit('message.sent', eventPayload);
+    } else if (status === MessageStatus.DELIVERED) {
+      this.eventEmitter.emit('message.delivered', eventPayload);
+    } else if (status === MessageStatus.READ) {
+      this.eventEmitter.emit('message.read', eventPayload);
+    } else if (status === MessageStatus.FAILED) {
+      this.eventEmitter.emit('message.failed', eventPayload);
+    }
   }
 
   private async incrementCampaignCounter(

@@ -168,4 +168,103 @@ export class AnalyticsService {
     if (!job) throw new NotFoundException('Export job not found');
     return job;
   }
+
+  /**
+   * Backfill campaign_stats and daily_stats from existing MessageLog data.
+   * Call once to populate analytics for campaigns that ran before events were wired.
+   */
+  async backfillStats(userId: string): Promise<{ campaignsUpdated: number; dailyRows: number }> {
+    // 1. Backfill campaign_stats from MessageLog aggregation
+    const campaignAgg: Array<{
+      campaignId: string;
+      total: string;
+      sent: string;
+      delivered: string;
+      read: string;
+      failed: string;
+      replied: string;
+    }> = await this.messageLogRepo
+      .createQueryBuilder('ml')
+      .select('ml."campaignId"', 'campaignId')
+      .addSelect('COUNT(*)', 'total')
+      .addSelect(`SUM(CASE WHEN ml.status = 'SENT' OR ml.status = 'DELIVERED' OR ml.status = 'READ' THEN 1 ELSE 0 END)`, 'sent')
+      .addSelect(`SUM(CASE WHEN ml.status = 'DELIVERED' OR ml.status = 'READ' THEN 1 ELSE 0 END)`, 'delivered')
+      .addSelect(`SUM(CASE WHEN ml.status = 'READ' THEN 1 ELSE 0 END)`, 'read')
+      .addSelect(`SUM(CASE WHEN ml.status = 'FAILED' THEN 1 ELSE 0 END)`, 'failed')
+      .addSelect('0', 'replied')
+      .where('ml."userId" = :userId', { userId })
+      .andWhere('ml."campaignId" IS NOT NULL')
+      .groupBy('ml."campaignId"')
+      .getRawMany();
+
+    let campaignsUpdated = 0;
+    for (const row of campaignAgg) {
+      const sent = parseInt(row.sent, 10) || 0;
+      const delivered = parseInt(row.delivered, 10) || 0;
+      const read = parseInt(row.read, 10) || 0;
+      const failed = parseInt(row.failed, 10) || 0;
+
+      await this.statsRepo.upsert(
+        {
+          campaignId: row.campaignId,
+          totalContacts: parseInt(row.total, 10) || 0,
+          sentCount: sent,
+          deliveredCount: delivered,
+          readCount: read,
+          failedCount: failed,
+          repliedCount: 0,
+          optedOutCount: 0,
+          deliveryRate: sent > 0 ? delivered / sent : 0,
+          readRate: delivered > 0 ? read / delivered : 0,
+          replyRate: 0,
+        },
+        ['campaignId'],
+      );
+      campaignsUpdated++;
+    }
+
+    // 2. Backfill daily_stats from MessageLog aggregation
+    const dailyAgg: Array<{
+      userId: string;
+      sessionId: string | null;
+      date: string;
+      sent: string;
+      delivered: string;
+      read: string;
+      failed: string;
+    }> = await this.messageLogRepo
+      .createQueryBuilder('ml')
+      .select('ml."userId"', 'userId')
+      .addSelect('ml."sessionId"', 'sessionId')
+      .addSelect(`TO_CHAR(ml."createdAt", 'YYYY-MM-DD')`, 'date')
+      .addSelect(`SUM(CASE WHEN ml.status IN ('SENT','DELIVERED','READ') THEN 1 ELSE 0 END)`, 'sent')
+      .addSelect(`SUM(CASE WHEN ml.status IN ('DELIVERED','READ') THEN 1 ELSE 0 END)`, 'delivered')
+      .addSelect(`SUM(CASE WHEN ml.status = 'READ' THEN 1 ELSE 0 END)`, 'read')
+      .addSelect(`SUM(CASE WHEN ml.status = 'FAILED' THEN 1 ELSE 0 END)`, 'failed')
+      .where('ml."userId" = :userId', { userId })
+      .groupBy('ml."userId"')
+      .addGroupBy('ml."sessionId"')
+      .addGroupBy(`TO_CHAR(ml."createdAt", 'YYYY-MM-DD')`)
+      .getRawMany();
+
+    let dailyRows = 0;
+    for (const row of dailyAgg) {
+      await this.dailyRepo.upsert(
+        {
+          userId: row.userId,
+          sessionId: row.sessionId ?? undefined,
+          date: row.date,
+          sentCount: parseInt(row.sent, 10) || 0,
+          deliveredCount: parseInt(row.delivered, 10) || 0,
+          readCount: parseInt(row.read, 10) || 0,
+          failedCount: parseInt(row.failed, 10) || 0,
+        },
+        ['userId', 'sessionId', 'date'],
+      );
+      dailyRows++;
+    }
+
+    this.logger.log(`Backfill complete: ${campaignsUpdated} campaigns, ${dailyRows} daily rows`);
+    return { campaignsUpdated, dailyRows };
+  }
 }

@@ -89,4 +89,11 @@ export class AnalyticsController {
   ) {
     return this.analyticsService.getExportJob(user.id, jobId);
   }
+
+  @Post('backfill')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Backfill campaign_stats and daily_stats from existing MessageLog data' })
+  async backfillStats(@CurrentUser() user: User) {
+    return this.analyticsService.backfillStats(user.id);
+  }
 }
