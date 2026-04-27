@@ -31,7 +31,7 @@ export class SchedulerService {
       { campaignId },
       {
         delay,
-        jobId: `launch:${campaignId}`,
+        jobId: `launch-${campaignId}`,
         removeOnComplete: true,
         removeOnFail: false,
       },
@@ -49,7 +49,7 @@ export class SchedulerService {
 
   async cancelScheduledCampaign(campaignId: string): Promise<void> {
     const job = await this.campaignLaunchQueue.getJob(
-      `launch:${campaignId}`,
+      `launch-${campaignId}`,
     );
     if (job) await job.remove();
 
@@ -67,7 +67,7 @@ export class SchedulerService {
   ): Promise<void> {
     // Remove existing job
     const existingJob = await this.campaignLaunchQueue.getJob(
-      `launch:${campaignId}`,
+      `launch-${campaignId}`,
     );
     if (existingJob) await existingJob.remove();
 

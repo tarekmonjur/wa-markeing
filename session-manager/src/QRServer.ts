@@ -94,8 +94,11 @@ export class QRServer {
    */
   private async getStatus(req: Request, res: Response): Promise<void> {
     const { id } = req.params;
-    const instance = this.pool.get(id);
-
+    let instance = this.pool.get(id);
+    // Auto-restore from saved creds if not in memory
+    if (!instance) {
+      instance = await this.pool.restore(id);
+    }
     if (!instance) {
       res.status(404).json({ error: 'Session not found, POST /sessions/:id/connect first' });
       return;
@@ -118,7 +121,11 @@ export class QRServer {
     const { id } = req.params;
     const { phone, body, mediaUrl, mediaType } = req.body;
 
-    const instance = this.pool.get(id);
+    let instance = this.pool.get(id);
+    // Auto-restore from saved creds if not in memory
+    if (!instance) {
+      instance = await this.pool.restore(id);
+    }
     if (!instance) {
       res.status(404).json({ error: 'Session not found' });
       return;

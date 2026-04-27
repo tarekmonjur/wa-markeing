@@ -192,7 +192,7 @@ export class DripService {
         },
         {
           delay: Math.max(delay, 0),
-          jobId: `drip:${enrollment.id}:step:1`,
+          jobId: `drip-${enrollment.id}-step-1`,
           removeOnComplete: true,
           removeOnFail: false,
         },
@@ -357,7 +357,7 @@ export class DripService {
       },
       {
         delay: nextStep.delayHours * 3600000,
-        jobId: `drip:${enrollment.id}:step:${nextStep.stepNumber}`,
+        jobId: `drip-${enrollment.id}-step-${nextStep.stepNumber}`,
         removeOnComplete: true,
         removeOnFail: false,
       },

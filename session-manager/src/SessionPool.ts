@@ -19,14 +19,63 @@ export class SessionPool {
     this.store = new SessionStore(sessionsPath);
   }
 
+  /**
+   * Fresh connect — clears saved creds and starts a new QR pairing flow.
+   * Use this only when the user explicitly wants to re-pair.
+   */
   async connect(sessionId: string): Promise<BaileysInstance> {
     if (this.instances.has(sessionId)) {
       return this.instances.get(sessionId)!;
     }
 
-    // Clear stale creds from any previous failed attempt
+    // Clear creds for a fresh QR pairing
     this.store.clearCreds(sessionId);
 
+    return this.createAndConnect(sessionId);
+  }
+
+  /**
+   * Restore a session using saved credentials (no QR needed).
+   * Returns null if no saved creds exist.
+   */
+  async restore(sessionId: string): Promise<BaileysInstance | undefined> {
+    if (this.instances.has(sessionId)) {
+      return this.instances.get(sessionId)!;
+    }
+
+    if (!this.store.hasCreds(sessionId)) {
+      return undefined;
+    }
+
+    this.logger.info({ sessionId }, 'Restoring session from saved credentials');
+    return this.createAndConnect(sessionId);
+  }
+
+  /**
+   * Restore all sessions that have saved credentials on disk.
+   * Called once on startup.
+   */
+  async restoreAll(): Promise<void> {
+    const savedIds = this.store.listSavedSessions();
+    if (savedIds.length === 0) {
+      this.logger.info('No saved sessions to restore');
+      return;
+    }
+
+    this.logger.info({ count: savedIds.length }, 'Restoring saved sessions');
+    for (const sessionId of savedIds) {
+      try {
+        await this.restore(sessionId);
+      } catch (err: any) {
+        this.logger.error(
+          { sessionId, error: err.message },
+          'Failed to restore session, skipping',
+        );
+      }
+    }
+  }
+
+  private async createAndConnect(sessionId: string): Promise<BaileysInstance> {
     const credPath = this.store.getCredPath(sessionId);
     const instance = new BaileysInstance(sessionId, credPath, this.logger);
 

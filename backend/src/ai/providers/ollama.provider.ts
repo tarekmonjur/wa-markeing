@@ -14,19 +14,28 @@ export class OllamaProvider implements IAiProvider {
   }
 
   async generateMarketingCopy(prompt: string): Promise<string> {
-    const res = await fetch(`${this.baseUrl}/api/generate`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        model: this.model,
-        prompt,
-        stream: false,
-        options: { num_predict: 200, temperature: 0.8 },
-      }),
-    });
+    let res: Response;
+    try {
+      res = await fetch(`${this.baseUrl}/api/generate`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          model: this.model,
+          prompt,
+          stream: false,
+          options: { num_predict: 200, temperature: 0.8 },
+        }),
+        signal: AbortSignal.timeout(60_000),
+      });
+    } catch (err) {
+      throw new Error(
+        `Ollama unreachable at ${this.baseUrl}: ${(err as Error).message}`,
+      );
+    }
 
     if (!res.ok) {
-      throw new Error(`Ollama API error: ${res.status}`);
+      const body = await res.text().catch(() => '');
+      throw new Error(`Ollama API error ${res.status}: ${body}`);
     }
 
     const data = await res.json();

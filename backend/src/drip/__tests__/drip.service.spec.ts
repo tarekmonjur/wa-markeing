@@ -3,7 +3,34 @@ import { DripService } from '../drip.service';
 import { EnrollStatus } from '../entities/drip-enrollment.entity';
 import { StepCondition } from '../entities/drip-step.entity';
 import { Direction } from '../../database/enums';
-import { createMockRepository } from '../../../test/helpers/mock-repository';
+
+function createMockRepository() {
+  return {
+    find: jest.fn(),
+    findOne: jest.fn(),
+    findOneBy: jest.fn(),
+    findAndCount: jest.fn(),
+    save: jest.fn(),
+    create: jest.fn(),
+    update: jest.fn(),
+    delete: jest.fn(),
+    remove: jest.fn(),
+    count: jest.fn(),
+    createQueryBuilder: jest.fn(() => ({
+      where: jest.fn().mockReturnThis(),
+      andWhere: jest.fn().mockReturnThis(),
+      orderBy: jest.fn().mockReturnThis(),
+      skip: jest.fn().mockReturnThis(),
+      take: jest.fn().mockReturnThis(),
+      getMany: jest.fn(),
+      getOne: jest.fn(),
+      getManyAndCount: jest.fn(),
+      select: jest.fn().mockReturnThis(),
+      leftJoinAndSelect: jest.fn().mockReturnThis(),
+    })),
+    metadata: { columns: [], relations: [] },
+  };
+}
 
 describe('DripService', () => {
   let service: DripService;
@@ -107,7 +134,7 @@ describe('DripService', () => {
         'process-drip-step',
         expect.objectContaining({ enrollmentId: 'enr1', stepNumber: 1 }),
         expect.objectContaining({
-          jobId: 'drip:enr1:step:1',
+          jobId: 'drip-enr1-step-1',
           removeOnComplete: true,
         }),
       );
@@ -247,7 +274,7 @@ describe('DripService', () => {
         { enrollmentId: 'enr1', stepNumber: 2 },
         expect.objectContaining({
           delay: 48 * 3600000,
-          jobId: 'drip:enr1:step:2',
+          jobId: 'drip-enr1-step-2',
         }),
       );
     });

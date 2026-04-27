@@ -6,7 +6,8 @@
     "packages/*",
     "backend",
     "frontend",
-    "session-manager"
+    "session-manager",
+    "documentation"
   ],
   "scripts": {
     "backend:dev": "npm run dev -w backend",

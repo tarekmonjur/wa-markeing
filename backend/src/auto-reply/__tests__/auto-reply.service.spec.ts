@@ -2,7 +2,34 @@ import { NotFoundException, BadRequestException } from '@nestjs/common';
 import { AutoReplyService } from '../auto-reply.service';
 import { KeywordMatcherService } from '../keyword-matcher.service';
 import { MatchType } from '../entities/auto-reply-rule.entity';
-import { createMockRepository } from '../../../test/helpers/mock-repository';
+
+function createMockRepository() {
+  return {
+    find: jest.fn(),
+    findOne: jest.fn(),
+    findOneBy: jest.fn(),
+    findAndCount: jest.fn(),
+    save: jest.fn(),
+    create: jest.fn(),
+    update: jest.fn(),
+    delete: jest.fn(),
+    remove: jest.fn(),
+    count: jest.fn(),
+    createQueryBuilder: jest.fn(() => ({
+      where: jest.fn().mockReturnThis(),
+      andWhere: jest.fn().mockReturnThis(),
+      orderBy: jest.fn().mockReturnThis(),
+      skip: jest.fn().mockReturnThis(),
+      take: jest.fn().mockReturnThis(),
+      getMany: jest.fn(),
+      getOne: jest.fn(),
+      getManyAndCount: jest.fn(),
+      select: jest.fn().mockReturnThis(),
+      leftJoinAndSelect: jest.fn().mockReturnThis(),
+    })),
+    metadata: { columns: [], relations: [] },
+  };
+}
 
 describe('AutoReplyService', () => {
   let service: AutoReplyService;

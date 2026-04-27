@@ -86,6 +86,8 @@ services:
       SESSION_FILES_PATH: /data/sessions
       FRONTEND_URL: http://localhost:3000
       SESSION_MANAGER_URL: http://session-manager:3002
+      OLLAMA_URL: http://ollama:11434
+      OLLAMA_MODEL: llama3.2:3b
     command: ['npm', 'run', 'dev']
     depends_on:
       postgres:
@@ -93,6 +95,8 @@ services:
       redis:
         condition: service_healthy
       minio:
+        condition: service_healthy
+      ollama:
         condition: service_healthy
     post_start:
       - command: /bin/sh -c "npm run migration:run"
@@ -124,6 +128,29 @@ services:
       backend:
         condition: service_healthy
 
+  ollama:
+    image: ollama/ollama:latest
+    ports:
+      - '11434:11434'
+    volumes:
+      - ollama_data:/root/.ollama
+    healthcheck:
+      test: ['CMD', 'ollama', 'list']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  ollama-pull:
+    image: ollama/ollama:latest
+    depends_on:
+      ollama:
+        condition: service_healthy
+    entrypoint: ['ollama', 'pull', 'llama3.2:3b']
+    environment:
+      OLLAMA_HOST: ollama:11434
+    restart: 'no'
+
   session-manager:
     build:
       context: ./session-manager
@@ -153,3 +180,4 @@ volumes:
   redisdata:
   miniodata:
   session-data:
+  ollama_data:

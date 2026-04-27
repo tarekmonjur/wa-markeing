@@ -34,7 +34,7 @@ describe('SchedulerService', () => {
       { campaignId: 'c1' },
       expect.objectContaining({
         delay: expect.any(Number),
-        jobId: 'launch:c1',
+        jobId: 'launch-c1',
         removeOnComplete: true,
         removeOnFail: false,
       }),
@@ -52,7 +52,7 @@ describe('SchedulerService', () => {
     expect(mockQueue.add).toHaveBeenCalledWith(
       'launch-campaign',
       expect.anything(),
-      expect.objectContaining({ jobId: 'launch:uuid-abc' }),
+      expect.objectContaining({ jobId: 'launch-uuid-abc' }),
     );
   });
 
@@ -88,7 +88,7 @@ describe('SchedulerService', () => {
     expect(mockQueue.add).toHaveBeenCalledWith(
       'launch-campaign',
       { campaignId: 'c1' },
-      expect.objectContaining({ jobId: 'launch:c1' }),
+      expect.objectContaining({ jobId: 'launch-c1' }),
     );
   });
 

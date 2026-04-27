@@ -33,6 +33,11 @@ async function main() {
   app.listen(PORT, () => {
     logger.info(`Session-manager listening on port ${PORT}`);
   });
+
+  // Auto-restore saved sessions after server starts
+  pool.restoreAll().catch((err) => {
+    logger.error({ error: err.message }, 'Failed to restore sessions on startup');
+  });
 }
 
 main().catch((err) => {
