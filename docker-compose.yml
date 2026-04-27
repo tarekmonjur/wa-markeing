@@ -122,6 +122,7 @@ services:
     environment:
       BACKEND_URL: http://backend:3001
       SESSION_MANAGER_URL: http://session-manager:3002
+      DOCS_URL: http://documentation:3003
       NEXT_TELEMETRY_DISABLED: 1
     command: ['npm', 'run', 'dev']
     depends_on:
